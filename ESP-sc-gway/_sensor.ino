@@ -40,7 +40,7 @@ unsigned char DevAddr[4]  = _DEVADDR ;				// see ESP-sc-gway.h
 // ----------------------------------------------------------------------------
 // LoRaSensors() is a function that puts sensor values in the MACPayload and 
 // sends these values up to the server. For the server it is impossible to know 
-// whther or not the message comes from a LoRa node or from the gateway.
+// whether or not the message comes from a LoRa node or from the gateway.
 //
 // The example code below adds a battery value in lCode (encoding protocol) but
 // of-course you can add any byte string you wish

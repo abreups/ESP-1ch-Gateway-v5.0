@@ -207,7 +207,7 @@
 // ntp
 #define NTP_TIMESERVER "a.st1.ntp.br"	// Country and region specific
 #define NTP_TIMEZONES	-3					// How far is our Timezone from UTC (excl daylight saving/summer time)
-#define SECS_PER_HOUR	3600
+//#define SECS_PER_HOUR	3600  // this is already defined in TimeLib.h
 #define NTP_INTR 0							// Do NTP processing with interrupts or in loop();
 
 #if GATEWAYNODE==1
@@ -246,15 +246,17 @@ struct wpas {
 // Note: DO NOT use the first and the last line of the stucture, these should be empty strings and
 //	the first line in te struct is reserved for WifiManager.
 //
-#if 1 // SIM, queremos usar esse método de conexão ao Wi-Fi
+#if 0
+// --------------  put the content of these following 5 lines in a file and set the path + file name below --------
 wpas wpa[] = {
 	{ "" , "" },							          // Reserved for WiFi Manager
-  { "escritorio", "PAPITO2010!@#" },
+  { "your ssid", "your wifi password" },
 	{ "" , "" }                         // Reserved for WiFi Manager
 };
+// --------------  put the content of these above 5 lines in a file and set the path + file name below --------
 #else
-// Place outside version control to avoid the risk of commiting it to github ;-)
-//#include "d:\arduino\wpa.h"
+// edit the file path and name below to the one you created with the 5 lines indicated above
+#include "c:\Users\Admin\minhaSenhaWiFi.txt"
 #endif
 
 // For asserting and testing the following defines are used.

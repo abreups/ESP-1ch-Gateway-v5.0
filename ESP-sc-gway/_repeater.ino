@@ -32,14 +32,16 @@
 
 int sendLora(char *msg, int len) {
 	// Check whete len is not exceeding maximum length
-	Serial.print("sendLora:: ");
+  printTime();
+	Serial.print("_repeater::sendLora:: ");
 	
 	for (int i=0; i< len; i++) {
 		Serial.print(msg[1],HEX);
-		Serial.print('.');
+		Serial.println('.');
 	}
 	
-	if (debug>=2) Serial.flush();
+	//if (debug>=2) Serial.flush();
+  Serial.flush();
 	return(1);
 }
 

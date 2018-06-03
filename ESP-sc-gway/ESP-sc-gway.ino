@@ -276,6 +276,7 @@ static void printTime() {
 	printDigits(minute());
 	Serial.print(F(":"));
 	printDigits(second());
+  Serial.print(F(" "));
 	return;
 }
 
@@ -1379,7 +1380,7 @@ void loop ()
 	if ( (((nowTime - statr[0].tmst) / 1000000) > _MSG_INTERVAL ) &&
 		(msgTime < statr[0].tmst)) {
 #if DUSB>=1
-		Serial.print('r');
+		Serial.print("ESP-sc-gway::loop::reinitiate lora modem");
 #endif
 		initLoraModem();
 		if (_cad) {
@@ -1401,6 +1402,10 @@ void loop ()
 	// not called frequently but it should always run when called.
 	//
 	yield();
+#if DUSB>=2
+    printTime();
+    Serial.println("ESP-sc-gway::loop::Perform OTA update");
+#endif
 	ArduinoOTA.handle();
 #endif
 
@@ -1409,6 +1414,12 @@ void loop ()
 	// and monitoring of the node. This function is important so it is called at the
 	// start of the loop() function
 	yield();
+
+// Debug disabled because it is called too much, all the time
+#if DUSB>=5
+    printTime();
+    Serial.println("ESP-sc-gway::loop::handle WiFi");
+#endif
 	server.handleClient();	
 #endif
 
@@ -1417,11 +1428,15 @@ void loop ()
 	// We will not read Udp in this loop cycle then
 	if (WlanConnect(1) < 0) {
 #if DUSB>=1
+#if DUSB>=2
+    printTime();
+    Serial.print("ESP-sc-gway::loop::WlanConnect");
+#endif
 			Serial.print(F("loop: ERROR reconnect WLAN"));
 #endif
 			yield();
 			return;										// Exit loop if no WLAN connected
-	}
+	} // could not connect wifi
 	
 	// So if we are connected 
 	// Receive UDP PUSH_ACK messages from server. (*2, par. 3.3)
@@ -1432,13 +1447,18 @@ void loop ()
 	else {
 		while( (packetSize = Udp.parsePacket()) > 0) {		// Length of UDP message waiting
 #if DUSB>=2
-			Serial.println(F("loop:: readUdp calling"));
+      printTime();
+      Serial.println(F("ESP-sc-gway::loop:: Wi-Fi connected"));
+      printTime();
+			Serial.println(F("ESP-sc-gway::loop:: readUdp calling"));
 #endif
 			// Packet may be PKT_PUSH_ACK (0x01), PKT_PULL_ACK (0x03) or PKT_PULL_RESP (0x04)
 			// This command is found in byte 4 (buffer[3])
 			if (readUdp(packetSize) <= 0) {
 #if DUSB>=1
-				if (debug>0) Serial.println(F("readUDP error"));
+				//if (debug>0) Serial.println(F("readUDP error"));
+        printTime();
+        Serial.println(F("ESP-sc-gway::readUDP error"));
 #endif
 				break;
 			}
@@ -1462,7 +1482,8 @@ void loop ()
 	
 		if ((_state == S_SCAN) && (sf==SF12)) {
 #if DUSB>=1
-			if (debug>=1) Serial.println(F("loop:: hop"));
+      printTime();
+			Serial.println(F("ESP-sc-gway::loop::hop"));
 #endif
 			hop(); 
 		}
@@ -1482,7 +1503,10 @@ void loop ()
 				cadScanner(); 
 			}
 		}
-		else if (debug>=3) { Serial.print(F(" state=")); Serial.println(_state); } 
+		printTime();
+		//else if (debug>=3) { Serial.print(F(" state=")); Serial.println(_state); } 
+    Serial.print(F("ESP-sc-gway::loop::state="));
+    Serial.println(_state);
 		inHop = false;									// Reset re-entrane protection of HOP
 		yield();
 	}
@@ -1494,17 +1518,20 @@ void loop ()
 
     if ((nowSeconds - stattime) >= _STAT_INTERVAL) {	// Wake up every xx seconds
 #if DUSB>=1
-		if (debug>=2) {
-			Serial.print(F("STAT <"));
+		//if (debug>=2) {
+			printTime();
+			Serial.print(F("ESP-sc-gway::loop::STAT <"));
 			Serial.flush();
-		}
+		//}
 #endif
         sendstat();										// Show the status message and send to server
 #if DUSB>=1
-		if (debug>=2) {
-			Serial.println(F(">"));
-			if (debug>=2) Serial.flush();
-		}
+		//if (debug>=2) {
+			printTime();
+			Serial.println(F("ESP-sc-gway::loop::>"));
+			//if (debug>=2) Serial.flush();
+     Serial.flush();
+		//}
 #endif	
 
 		// If the gateway behaves like a node, we do from time to time
@@ -1521,7 +1548,8 @@ void loop ()
 			// could be battery but also other status info or sensor info
 		
 			if (sensorPacket() < 0) {
-				Serial.println(F("sensorPacket: Error"));
+				printTime();
+				Serial.println(F("ESP-sc-gway::loop::sensorPacket: Error"));
 			}
 		}
 #endif
@@ -1536,10 +1564,12 @@ void loop ()
 	nowSeconds = (uint32_t) millis() /1000;
     if ((nowSeconds - pulltime) >= _PULL_INTERVAL) {	// Wake up every xx seconds
 #if DUSB>=1
-		if (debug>=1) {
-			Serial.print(F("PULL <"));
-			if (debug>=2) Serial.flush();
-		}
+		//if (debug>=1) {
+			printTime();
+			Serial.print(F("ESP-sc-gway::loop::PULL <"));
+			//if (debug>=2) Serial.flush();
+      Serial.flush();
+		//}
 #endif
         pullData();										// Send PULL_DATA message to server
 		initLoraModem();
@@ -1554,10 +1584,11 @@ void loop ()
 		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
 		writeRegister(REG_IRQ_FLAGS, 0xFF);				// Reset all interrupt flags
 #if DUSB>=1
-		if (debug>=1) {
-			Serial.println(F(">"));
-			if (debug>=2) Serial.flush();
-		}
+		//if (debug>=1) {
+			Serial.println(F("ESP-sc-gway::loop::>"));
+			//if (debug>=2) Serial.flush();
+     Serial.flush();
+		//}
 #endif		
 		pulltime = nowSeconds;
     }

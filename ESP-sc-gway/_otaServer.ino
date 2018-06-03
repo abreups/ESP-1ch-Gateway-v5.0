@@ -30,7 +30,7 @@
 void setupOta(char *hostname) {
 
 	ArduinoOTA.begin();
-	Serial.println(F("setupOta:: Started"));
+	Serial.println(F("_otaServer::setupOta::Started"));
 	
 	// Hostname defaults to esp8266-[ChipID]
 	ArduinoOTA.setHostname(hostname);
@@ -45,7 +45,7 @@ void setupOta(char *hostname) {
 		//	type = "filesystem";
 
 		// NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-		Serial.println("Start updating " + type);
+		Serial.println("_otaServer::setupOTA::Start updating " + type);
 	});
 	
 	ArduinoOTA.onEnd([]() {
@@ -66,8 +66,8 @@ void setupOta(char *hostname) {
 	});
 	
 	
-	Serial.println("Ready");
-	Serial.print("IP address: ");
+	Serial.println("_otaServer::setupOTA::Ready");
+	Serial.print("_otaServer::setupOTA::IP address: ");
 	Serial.println(WiFi.localIP());
 	
 	// Only if the Webserver is active also
@@ -81,19 +81,19 @@ void setupOta(char *hostname) {
       switch(ret) {
         case HTTP_UPDATE_FAILED:
             //PREi::sendJSON(500, "Update failed.");
-			Serial.println(F("Update failed"));
+			Serial.println(F("_otaServer::setupOTA::Update failed"));
             break;
         case HTTP_UPDATE_NO_UPDATES:
             //PREi::sendJSON(304, "Update not necessary.");
-			Serial.println(F("Update not necessary"));
+			Serial.println(F("_otaServer::setupOTA::Update not necessary"));
             break;
         case HTTP_UPDATE_OK:
             //PREi::sendJSON(200, "Update started.");
-			Serial.println(F("Update started"));
+			Serial.println(F("_otaServer::setupOTA::Update started"));
             ESP.restart();
             break;
 		default:
-			Serial.println(F("setupOta:: Unknown ret="));
+			Serial.println(F("_otaServer::setupOTA::Unknown ret="));
       }
 	});
 #endif

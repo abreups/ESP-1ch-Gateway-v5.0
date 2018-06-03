@@ -211,6 +211,10 @@ static void setVariables(const char *cmd, const char *arg) {
 #if A_OTA==1
 	if (strcmp(cmd, "UPDATE")==0) {
 		if (atoi(arg) == 1) {
+#if DUSB>=2
+    printTime();
+    Serial.println("_wwwServer::Will call updateOtaa()");
+#endif
 			updateOtaa();
 		}
 	}
