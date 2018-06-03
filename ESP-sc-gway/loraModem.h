@@ -29,16 +29,16 @@ long txDelay= 0x00;								// delay time on top of server TMST
 // Each "real" gateway should support the first 3 frequencies according to LoRa spec.
 
 int freqs [] = { 
-	868100000, 									// Channel 0, 868.1 MHz primary
-	868300000, 									// Channel 1, 868.3 MHz mandatory
-	868500000, 									// Channel 2, 868.5 MHz mandatory
-	867100000, 									// Channel 3, 867.1 MHz
-	867300000, 
-	867500000, 
-	867700000, 
-	867900000, 
-	868800000, 
-	869525000									// Channel, for responses gateway (10%)
+	433175000                     //868100000, 									// Channel 0, 868.1 MHz primary
+	//868300000, 									// Channel 1, 868.3 MHz mandatory
+	//868500000, 									// Channel 2, 868.5 MHz mandatory
+	//867100000, 									// Channel 3, 867.1 MHz
+	//867300000, 
+	//867500000, 
+	//867700000, 
+	//867900000, 
+	//868800000, 
+	//869525000									// Channel, for responses gateway (10%)
 	// TTN defines an additional channel at 869.525Mhz using SF9 for class B. Not used
 };
 uint32_t  freq = freqs[0];

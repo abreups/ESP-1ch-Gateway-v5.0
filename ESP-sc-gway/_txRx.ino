@@ -60,11 +60,12 @@ int sendPacket(uint8_t *buf, uint8_t length)
 	buf[length] = 0;
 	
 #if DUSB>=1
-	if (debug>=2) {
+	//if (debug>=2) { // paulo
+    Serial.println("módulo: _txRx");
 		Serial.println((char *)buf);
 		Serial.print(F("<"));
 		Serial.flush();
-	}
+	//}
 #endif
 	// Use JSON to decode the string after the first 4 bytes.
 	// The data for the node is in the "data" field. This function destroys original buffer
@@ -72,11 +73,12 @@ int sendPacket(uint8_t *buf, uint8_t length)
 		
 	if (!root.success()) {
 #if DUSB>=1
+    Serial.println("módulo: _txRx");
 		Serial.print (F("sendPacket:: ERROR Json Decode"));
-		if (debug>=2) {
+		//if (debug>=2) {  // paulo
 			Serial.print(':');
 			Serial.println(bufPtr);
-		}
+		//}
 		Serial.flush();
 #endif
 		return(-1);
@@ -103,17 +105,20 @@ int sendPacket(uint8_t *buf, uint8_t length)
 
 	if (data != NULL) {
 #if DUSB>=1
-		if (debug>=2) { 
+		//if (debug>=2) {  // paulo
+      Serial.println("módulo: _txRx");
 			Serial.print(F("data: ")); 
 			Serial.println((char *) data);
-			if (debug>=2) Serial.flush();
-		}
+			//if (debug>=2) Serial.flush();
+      Serial.flush(); // inseri paulo
+		//}
 #endif
 	}
 	else {
 #if DUSB>=1
 		Serial.println(F("sendPacket:: ERROR: data is NULL"));
-		if (debug>=2) Serial.flush();
+		//if (debug>=2) Serial.flush();
+   Serial.flush();  // inseri paulo
 #endif
 		return(-1);
 	}
@@ -158,7 +163,7 @@ int sendPacket(uint8_t *buf, uint8_t length)
 	Serial.println(F("sendPacket:: LoraDown filled"));
 
 #if DUSB>=1
-	if (debug>=2) {
+	//if (debug>=2) {  // paulo
 		Serial.print(F("Request:: "));
 		Serial.print(F(" tmst=")); Serial.print(tmst); Serial.print(F(" wait=")); Serial.println(w);
 		
@@ -173,7 +178,7 @@ int sendPacket(uint8_t *buf, uint8_t length)
 
 		Serial.print(F(" ipol=")); Serial.println(ipol);
 		Serial.println();								// empty line between messages
-	}
+	//}
 #endif
 
 	if (payLength != psize) {
@@ -182,18 +187,20 @@ int sendPacket(uint8_t *buf, uint8_t length)
 		Serial.print(payLength);
 		Serial.print(F(", psize="));
 		Serial.println(psize);
-		if (debug>=2) Serial.flush();
+		//if (debug>=2) Serial.flush(); paulo
+   Serial.flush(); // inseri paulo
 #endif
 	}
 #if DUSB>=1
-	else if (debug >= 2) {
+	//else if (debug >= 2) { // paulo
 		for (i=0; i<payLength; i++) {
 			Serial.print(payLoad[i],HEX); 
 			Serial.print(':'); 
 		}
 		Serial.println();
-		if (debug>=2) Serial.flush();
-	}
+		//if (debug>=2) Serial.flush(); paulo
+   Serial.flush(); // inseri paulo
+	//}
 #endif
 	cp_up_pkt_fwd++;
 
@@ -276,7 +283,7 @@ int buildPacket(uint32_t tmst, uint8_t *buff_up, struct LoraUp LoraUp, bool inte
 #endif
 
 #if DUSB>=1	
-	if (debug>=1) {
+	//if (debug>=1) {  // paulo
 		Serial.print(F("pRSSI: "));
 		Serial.print(prssi-rssicorr);
 		Serial.print(F(" RSSI: "));
@@ -293,7 +300,7 @@ int buildPacket(uint32_t tmst, uint8_t *buff_up, struct LoraUp LoraUp, bool inte
 		}
 		Serial.println();
 		yield();
-	}
+	//}
 #endif
 
 // Show received message status on OLED display
@@ -330,9 +337,11 @@ int buildPacket(uint32_t tmst, uint8_t *buff_up, struct LoraUp LoraUp, bool inte
 	// Encode message with messageLength into b64
 	int encodedLen = base64_enc_len(messageLength);		// max 341
 #if DUSB>=1
-	if ((debug>=1) && (encodedLen>255)) {
+	//if ((debug>=1) && (encodedLen>255)) { // paulo
+  if (encodedLen>255) { // inseri paulo
 		Serial.println(F("buildPacket:: b64 error"));
-		if (debug>=2) Serial.flush();
+		//if (debug>=2) Serial.flush(); // paulo
+    Serial.flush(); // inseri paulo
 	}
 #endif
 	base64_encode(b64, (char *) message, messageLength);// max 341
@@ -442,14 +451,14 @@ int buildPacket(uint32_t tmst, uint8_t *buff_up, struct LoraUp LoraUp, bool inte
 	++buff_index;
 	buff_up[buff_index] = 0; 							// add string terminator, for safety
 #if DUSB>=1
-	if (debug>=2) {
+	//if (debug>=2) {  // paulo
 		Serial.print(F("RXPK:: "));
 		Serial.println((char *)(buff_up + 12));			// DEBUG: display JSON payload
-	}
-	if (debug>= 2) {
+	//}
+	//if (debug>= 2) { // paulo
 		Serial.print(F("RXPK:: package length="));
 		Serial.println(buff_index);
-	}
+	//}
 #endif
 	return(buff_index);
 }// buildPacket

@@ -1011,6 +1011,10 @@ void setupWWW()
 	
 	Serial.print(F("WWW Server started on port "));
 	Serial.println(A_SERVERPORT);
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("MAC address: ");
+  Serial.println(WiFi.macAddress());
 	return;
 }
 

@@ -40,16 +40,39 @@
 //	- Upon TX goto S_SCAN
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 // SPI AND INTERRUPTS
 // The RFM96/SX1276 communicaties with the ESP8266 by means of interrupts 
 // and SPI interface. The SPI interface is bidirectional and allows both
 // parties to simultaneous write and read to registers.
 // Major drawback is that access is not protected for interrupt and non-
 // interrupt access. This means that when a program in loop() and a program
-// in interrupt do access the readregister and writeRegister() function
-// at teh same time that probably an error will occur.
+// in interrupt do access the readregister() and writeRegister() function
+// at the same time that probably an error will occur.
 // Therefore it is best to Either not use interrupts AT all (like LMIC)
-// or only use these functions in inteerupts and to further processing
+// or only use these functions in interrupts and to further processing
 // in the main loop() program.
 //
 // ============================================================================
@@ -126,26 +149,26 @@ uint8_t readRegister(uint8_t addr)
 #if MUTEX_SPI==1
 	if(!GetMutex(&mutexSPI)) {
 #if DUSB>=1
-		if (debug>=0) {
+		//if (debug>=0) { // paulo
 			gwayConfig.reents++;
 			Serial.print(F("readRegister:: read reentry"));
 			printTime();
 			Serial.println();
-			if (debug>=2) Serial.flush();
+			//if (debug>=2) Serial.flush();  // paulo
+      Serial.flush(); // incluido paulo
 			delayMicroseconds(50);
 			initLoraModem();
-		}
+		//}
 #endif
 		return 0;
 	}
 #endif
 
-	SPI.beginTransaction(readSettings);
-							
-    digitalWrite(pins.ss, LOW);					// Select Receiver
+	SPI.beginTransaction(readSettings);						
+  digitalWrite(pins.ss, LOW);					// Select Receiver
 	SPI.transfer(addr & 0x7F);
 	uint8_t res = (uint8_t) SPI.transfer(0x00);
-    digitalWrite(pins.ss, HIGH);				// Unselect Receiver
+  digitalWrite(pins.ss, HIGH);				// Unselect Receiver
 	SPI.endTransaction();
 
 #if MUTEX_SPI==1
@@ -175,15 +198,16 @@ void writeRegister(uint8_t addr, uint8_t value)
 #if MUTEX_SPO==1
 	if(!GetMutex(&mutexSPI)) {
 #if DUSB>=1
-		if (debug>=0) {
+		//if (debug>=0) {  // paulo
 			gwayConfig.reents++;
 			Serial.print(F("writeRegister:: write reentry"));
 			printTime();
 			Serial.println();
 			delayMicroseconds(50);
 			initLoraModem();
-			if (debug>=2) Serial.flush();
-		}
+			//if (debug>=2) Serial.flush(); // paulo
+      Serial.flush();  // incluido paulo
+		//}
 #endif
 		return;
 	}
@@ -191,13 +215,10 @@ void writeRegister(uint8_t addr, uint8_t value)
 	
 	SPI.beginTransaction(writeSettings);
 	digitalWrite(pins.ss, LOW);					// Select Receiver
-	
 	SPI.transfer((addr | 0x80) & 0xFF);
 	SPI.transfer(value & 0xFF);
 	//delayMicroseconds(10);
-	
-    digitalWrite(pins.ss, HIGH);				// Unselect Receiver
-	
+  digitalWrite(pins.ss, HIGH);				// Unselect Receiver
 	SPI.endTransaction();
 	
 #if MUTEX_SPO==1
@@ -222,16 +243,17 @@ void writeBuffer(uint8_t addr, uint8_t *buf, uint8_t len)
 	//noInterrupts();							// XXX
 #if MUTEX_SPO==1
 	if(!GetMutex(&mutexSPI)) {
-#if DUSB>=1
-		if (debug>=0) {
+#if DUSB>=2 // paulo era 1
+		//if (debug>=0) {  // paulo
 			gwayConfig.reents++;
 			Serial.print(F("writeBuffer:: write reentry"));
 			printTime();
 			Serial.println();
 			delayMicroseconds(50);
 			initLoraModem();
-			if (debug>=2) Serial.flush();
-		}
+			//if (debug>=2) Serial.flush();  // paulo
+     Serial.flush(); // incluido paulo
+		//}
 #endif
 		return;
 	}
@@ -239,13 +261,11 @@ void writeBuffer(uint8_t addr, uint8_t *buf, uint8_t len)
 	
 	SPI.beginTransaction(writeSettings);
 	digitalWrite(pins.ss, LOW);					// Select Receiver
-	
 	SPI.transfer((addr | 0x80) & 0xFF);			// write buffer address
 	for (uint8_t i=0; i<len; i++) {
 		SPI.transfer(buf[i] & 0xFF);
 	}
-    digitalWrite(pins.ss, HIGH);				// Unselect Receiver
-	
+  digitalWrite(pins.ss, HIGH);				// Unselect Receiver
 	SPI.endTransaction();
 	
 #if MUTEX_SPI==1
@@ -488,10 +508,10 @@ bool sendPkt(uint8_t *payLoad, uint8_t payLength)
 {
 #if DUSB>=2
 	if (payLength>=128) {
-		if (debug>=1) {
+		//if (debug>=1) { // paulo
 			Serial.print("sendPkt:: len=");
 			Serial.println(payLength);
-		}
+		//}
 		return false;
 	}
 #endif
@@ -526,6 +546,9 @@ bool sendPkt(uint8_t *payLoad, uint8_t payLength)
 
 void loraWait(uint32_t tmst)
 {
+#if DUSB>=2
+  Serial.println("módulo _loraModem : função loraWait");
+#endif
 	uint32_t startTime = micros();						// Start of the loraWait function
 	tmst += txDelay;
 	uint32_t waitTime = tmst - micros();
@@ -540,7 +563,7 @@ void loraWait(uint32_t tmst)
 		Serial.println(F("loraWait TOO LATE"));
 	}
 	
-	if (debug >=1) { 
+	//if (debug >=1) { // paulo
 		Serial.print(F("start: ")); 
 		Serial.print(startTime);
 		Serial.print(F(", end: "));
@@ -551,7 +574,7 @@ void loraWait(uint32_t tmst)
 		Serial.print(txDelay);
 		Serial.println();
 		if (debug>=2) Serial.flush();
-	}
+	//}
 #endif
 }
 
@@ -1018,7 +1041,7 @@ void stateMachine()
 	  // In S_SCAN we measure a high RSSI this means that there (probably) is a message
 	  // coming in at that freq. But not necessarily on the current SF.
 	  // If so find the right SF with CDDETD. 
-	  case S_SCAN:
+	  case S_SCAN:   // <======================================================================= S_SCAN
 	    //
 		// Intr=IRQ_LORA_CDDETD_MASK
 		// We detected a message on this frequency and SF when scanning
@@ -1026,9 +1049,9 @@ void stateMachine()
 		//
 		if (intr & IRQ_LORA_CDDETD_MASK) {
 #if DUSB>=2
-			if (debug >=3) {
+			//if (debug >=3) { // paulo
 				Serial.println(F("SCAN:: CADDETD, "));
-			}
+			//}
 #endif
 
 			_state = S_RX;								// Set state to receiving
@@ -1084,6 +1107,9 @@ void stateMachine()
 		// If we do not switch to S_CAD, we have to hop
 		// Instead of waiting for an interrupt we do this on timer basis (more regular).
 		else {
+#if DUSB>=2
+     Serial.println("Changing to state S_SCAN");
+#endif
 			_state=S_SCAN;
 			cadScanner();
 			writeRegister(REG_IRQ_FLAGS, 0xFF);
@@ -1103,13 +1129,15 @@ void stateMachine()
 	  // DIO0 interrupt IRQ_LORA_CDDONE_MASK in state S_CAD==2 means that we might have
 	  // a lock on the Freq but not the right SF. So we increase the SF
 	  //
-	  case S_CAD:
+	  case S_CAD:   // <======================================================================= S_RX
 
 		// Intr=IRQ_LORA_CDDETD_MASK
 		// We have to set the sf based on a strong RSSI for this channel
 		//
 		if (intr & IRQ_LORA_CDDETD_MASK) {
-
+#if DUSB>=2
+     Serial.println("Changing to state S_RX");
+#endif
 			_state = S_RX;								// Set state to start receiving
 			opmode(OPMODE_RX_SINGLE);					// set reg 0x01 to 0x06, initiate READ
 			
@@ -1152,6 +1180,9 @@ void stateMachine()
 			// If we reach SF12, we should go back to SCAN state
 			else {
 				if (_hop) { hop(); }					// if HOP we start at the next frequency
+#if DUSB>=2
+     Serial.println("Changing to state S_SCAN");
+#endif
 				_state = S_SCAN;
 				cadScanner();							// Which will reset SF to SF7
 				// Reset the interrupts
@@ -1164,9 +1195,12 @@ void stateMachine()
 		// is unknown in this state. So we clear interrupt and give a warning.
 		else {
 #if DUSB>=2
-			if (debug>=1) { 
+			//if (debug>=1) { 
 				Serial.println(F("CAD:: Unknown interrupt")); 
-			}
+			//}
+#endif
+#if DUSB>=2
+     Serial.println("Changing to state S_SCAN");
 #endif
 			_state = S_SCAN;
 			cadScanner();
@@ -1179,7 +1213,7 @@ void stateMachine()
 	  // If we receive an interrupt on dio0 state==S_RX
 	  // it should be a RxDone interrupt
 	  // So we should handle the received message
-	  case S_RX:
+	  case S_RX:   // <======================================================================= S_RX
 	
 		if (intr & IRQ_LORA_RXDONE_MASK) {
 
@@ -1193,10 +1227,16 @@ void stateMachine()
 				if (debug>=2) Serial.flush();
 #endif
 				if (_cad) {
+#if DUSB>=2
+     Serial.println("Changing to state S_SCAN");
+#endif
 					_state = S_SCAN;
 					cadScanner();
 				}
 				else {
+#if DUSB>=2
+     Serial.println("Changing to state S_RX");
+#endif
 					_state = S_RX;
 					rxLoraModem();
 				}
@@ -1209,9 +1249,9 @@ void stateMachine()
 
 			if((LoraUp.payLength = receivePkt(LoraUp.payLoad)) <= 0) {
 #if DUSB>=1
-				if (debug>=0) {
+				//if (debug>=0) {
 					Serial.println(F("sMachine:: Error S-RX"));
-				}
+				//}
 #endif
 			}
 				
@@ -1244,18 +1284,24 @@ void stateMachine()
 #endif
 			}
 #if DUSB>=2
-			else if (debug>=2) {
+			//else if (debug>=2) {
 				Serial.println(F("sMach:: receivePacket OK"));
-			}
+			//}
 #endif
 			
 			// Set the modem to receiving BEFORE going back to
 			// user space.
 			if (_cad) {
+#if DUSB>=2
+     Serial.println("Changing to state S_SCAN");
+#endif
 				_state = S_SCAN;
 				cadScanner();
 			}
 			else {
+#if DUSB>=2
+     Serial.println("Changing to state S_RX");
+#endif
 				_state = S_RX;
 				rxLoraModem();
 			}
@@ -1272,10 +1318,16 @@ void stateMachine()
 			
 			if (_cad) {
 				// Set the state to CAD scanning
+#if DUSB>=2
+     Serial.println("Changing to state S_SCAN");
+#endif
 				_state = S_SCAN;
 				cadScanner();							// Start the scanner after RXTOUT
 			}
 			else {
+#if DUSB>=2
+     Serial.println("Changing to state S_RX");
+#endif
 				_state = S_RX;							// XXX 170828, why?
 				rxLoraModem();			
 			}
@@ -1287,16 +1339,22 @@ void stateMachine()
 		// therefore we restart the scanning sequence (catch all)
 		else {
 #if DUSB>=2
-			if (debug >=3) {
+			//if (debug >=3) {
 				Serial.println(F("S_RX:: No RXDONE/RXTOUT, "));
-			}
+			//}
 #endif
 			initLoraModem();							// Reset all communication,3
 			if (_cad) {
+#if DUSB>=2
+     Serial.println("Changing to state S_SCAN");
+#endif
 				_state = S_SCAN;
 				cadScanner();
 			}
 			else {
+#if DUSB>=2
+     Serial.println("Changing to state S_RX");
+#endif
 				_state = S_RX;
 				rxLoraModem();			
 			}
@@ -1309,7 +1367,7 @@ void stateMachine()
 	  // --------------------------------------------------------------  
 
 	  //
-	  case S_TX:
+	  case S_TX:  // <====================================================================  S_TX
 	  
 	  	// Initiate the transmission of the buffer (in Interrupt space)
 		// We react on ALL interrupts if we are in TX state.
@@ -1326,9 +1384,13 @@ void stateMachine()
 		);
 		
 #if DUSB>=2
-		if (debug>=0) { 
-			Serial.println(F("S_TX, ")); 
-		}
+		//if (debug>=0) { // paulo
+			//Serial.println(F("S_TX, ")); // paulo
+     Serial.println(F("S_TXDONE, ")); // incluido paulo
+		//}
+#endif
+#if DUSB>=2
+     Serial.println("Changing to state S_TXDONE");
 #endif
 		_state = S_TXDONE;
 		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
@@ -1343,7 +1405,10 @@ void stateMachine()
 	  // If we receive an interrupt on dio0 _state==S_TX it is a TxDone interrupt
 	  // Do nothing with the interrupt, it is just an indication.
 	  // sendPacket switch back to scanner mode after transmission finished OK
-	  case S_TXDONE:
+	  case S_TXDONE:  // <==============================================================  S_TXDONE
+#if DUSB>=2
+     Serial.println("Entering case S_TXDONE");
+#endif
 		if (intr & IRQ_LORA_TXDONE_MASK) {
 #if DUSB>=1
 			Serial.println(F("TXDONE interrupt"));
@@ -1351,10 +1416,16 @@ void stateMachine()
 			// After transmission reset to receiver
 			if (_cad) {
 				// Set the state to CAD scanning
+#if DUSB>=2
+     Serial.println("Changing to state S_SCAN");
+#endif
 				_state = S_SCAN;
 				cadScanner();								// Start the scanner after TX cycle
 			}
 			else {
+#if DUSB>=2
+     Serial.println("Changing to state S_RX");
+#endif
 				_state = S_RX;
 				rxLoraModem();		
 			}
@@ -1362,18 +1433,20 @@ void stateMachine()
 			writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
 			writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);				// reset interrupt flags
 #if DUSB>=1
-			if (debug>=1) {
+			// if (debug>=1) { // paulo
 				Serial.println(F("TXDONE handled"));
-				if (debug>=2) Serial.flush();
-			}
+				// if (debug>=2) Serial.flush(); // paulo
+       Serial.flush(); // incluido paulo
+			//}
 #endif
 		}
 		else {
-#if DUSB>=1
-			if (debug>=0) {
+#if DUSB>=2 // era 1 paulo
+			//if (debug>=0) {  // paulo
 				Serial.println(F("TXDONE unknown interrupt"));
-				if (debug>=2) Serial.flush();
-			}
+				//if (debug>=2) Serial.flush(); // paulo
+        Serial.flush(); // incluido paulo
+			//}
 #endif
 		}
 	  break; // S_TXDONE	  
@@ -1385,17 +1458,23 @@ void stateMachine()
 	  // make sure that we pick up next interrupt
 	  default:
 #if DUSB>=2
-		if (debug >= 2) { 
+		//if (debug >= 2) {  // paulo
 			Serial.print("E state="); 
 			Serial.println(_state);	
-		}
+		//}
 #endif
 		if (_cad) {
+#if DUSB>=2
+     Serial.println("Changing to state S_SCAN");
+#endif
 			_state = S_SCAN;
 			cadScanner();
 		}
 		else
 		{
+#if DUSB>=2
+     Serial.println("Changing to state S_RX");
+#endif
 			_state = S_RX;
 			rxLoraModem();
 		}
