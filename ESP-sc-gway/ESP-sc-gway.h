@@ -2,6 +2,12 @@
 // Copyright (c) 2016, 2017 Maarten Westenberg version for ESP8266
 // Version 5.0.1
 // Date: 2017-11-15
+// 
+// Versão 5.0.2
+// Data: 2018-05-17
+// Autor: Paulo S. Abreu
+// Modificado para funcionar com WiFi LoRa 32, da Heltec, em 433MHz
+// Configurações baseadas no artigo: https://talk2lora.blogspot.com (02-jun-2018)
 //
 // Based on work done by Thomas Telkamp for Raspberry PI 1ch gateway and many others.
 // Contibutions of Dorijan Morelj and Andreas Spies for OLED support.
@@ -33,13 +39,14 @@
 // Also this is the initial value of debug parameter. 
 // The value can be changed using the admin webserver
 // For operational use, set initial DEBUG vaulue 0
-#define DEBUG 0
+#define DEBUG 0 // se esta linha for comentada, o pré-compilador nem reclama.
+                // Ou seja, acho que DEBUG não é usado...
 
-// Debug message will be put on Serial is this one is set.
-// If set to 0, not USB Serial prints are done
+// Debug message will be put on Serial if this one is set.
+// If set to 0, no USB Serial prints are done
 // Set to 1 it will prin all user level messages (with correct debug set)
 // If set to 2 it will also print interrupt messages (not recommended)
-#define DUSB 1
+#define DUSB 2
 
 // The spreading factor is the most important parameter to set for a single channel
 // gateway. It specifies the speed/datarate in which the gateway and node communicate.
@@ -48,7 +55,7 @@
 // This parameters contains the default value of SF, the actual version can be set with
 // the webserver and it will be stored in SPIFF
 // NOTE: The frequency is set in the loraModem.h file and is default 868.100000 MHz.
-#define _SPREADING SF7
+#define _SPREADING SF7 // aparentemente OK para 433MHz
 
 // Channel Activity Detection
 // This function will scan for valid LoRa headers and determine the Spreading 
@@ -57,7 +64,7 @@
 // continuous listen mode.
 // Using this function means that we HAVE to use more dio pins on the RFM95/sx1276
 // device and also connect enable dio1 to detect this state. 
-#define _CAD 1
+#define _CAD 0
 
 // Definitions for the admin webserver.
 // A_SERVER determines whether or not the admin webpage is included in the sketch.
@@ -87,7 +94,7 @@
 //	2: COMRESULT pin out
 //	3: For Heltec ESP32 based WIFI_LoRa_32 board
 //  4: Other, define your own in loraModem.h
-#define _PIN_OUT 3
+#define _PIN_OUT 3  // ---> ESP32
 
 // Gather statistics on sensor and Wifi status
 // 0= No statistics
@@ -109,7 +116,7 @@
 // NOTE: If your node has only one frequency enabled and one SF, you must set this to 1
 //		in order to receive downlink messages
 // NOTE: In all other cases, value 0 works for most gateways with CAD enabled
-#define _STRICT_1CH	0
+#define _STRICT_1CH	1
 
 // Allows configuration through WifiManager AP setup. Must be 0 or 1					
 #ifdef ESP32BUILD
@@ -177,8 +184,8 @@
 
 // MQTT definitions, these settings should be standard for TTN
 // and need not changing
-#define _TTNPORT 1700						// Standard port for TTN
-#define _TTNSERVER "router.eu.thethings.network"
+#define _TTNPORT 1700						    // Standard port for TTN
+#define _TTNSERVER "18.228.38.170"  // servidor loraserver do Evaldo
 
 // If you have a second back-end server defined such as Semtech or loriot.io
 // your can define _THINGPORT and _THINGSERVER with your own value.
@@ -190,16 +197,16 @@
 //#define _THINGSERVER "yourServer.com"		// Server URL of the LoRa-udp.js handler
 
 // Gateway Ident definitions
-#define _DESCRIPTION "My ESP32 Gateway"
-#define _EMAIL "j.kersing@the-box.com"
+#define _DESCRIPTION "ESP32 SC-Gateway do Paulo"
+#define _EMAIL "abreups@me.com"
 #define _PLATFORM "ESP32"
-#define _LAT 53.189
-#define _LON 6.557
-#define _ALT 8
+#define _LAT -23.623
+#define _LON -46.686
+#define _ALT 740
 
 // ntp
-#define NTP_TIMESERVER "nl.pool.ntp.org"	// Country and region specific
-#define NTP_TIMEZONES	1					// How far is our Timezone from UTC (excl daylight saving/summer time)
+#define NTP_TIMESERVER "a.st1.ntp.br"	// Country and region specific
+#define NTP_TIMEZONES	-3					// How far is our Timezone from UTC (excl daylight saving/summer time)
 #define SECS_PER_HOUR	3600
 #define NTP_INTR 0							// Do NTP processing with interrupts or in loop();
 
@@ -239,15 +246,15 @@ struct wpas {
 // Note: DO NOT use the first and the last line of the stucture, these should be empty strings and
 //	the first line in te struct is reserved for WifiManager.
 //
-#if 0
+#if 1 // SIM, queremos usar esse método de conexão ao Wi-Fi
 wpas wpa[] = {
-	{ "" , "" },							// Reserved for WiFi Manager
-  { "aap", "aapPasswd" },
-	{ "ape", "apePasswd" }
+	{ "" , "" },							          // Reserved for WiFi Manager
+  { "escritorio", "PAPITO2010!@#" },
+	{ "" , "" }                         // Reserved for WiFi Manager
 };
 #else
 // Place outside version control to avoid the risk of commiting it to github ;-)
-#include "d:\arduino\wpa.h"
+//#include "d:\arduino\wpa.h"
 #endif
 
 // For asserting and testing the following defines are used.

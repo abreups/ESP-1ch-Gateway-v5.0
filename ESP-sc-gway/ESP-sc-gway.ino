@@ -96,7 +96,8 @@ extern "C" {
 SSD1306  display(OLED_ADDR, OLED_SDA, OLED_SCL);// i2c ADDR & SDA, SCL on wemos
 #endif
 
-int debug=1;									// Debug level! 0 is no msgs, 1 normal, 2 extensive
+int debug=2;		// Debug level! 0 is no msgs, 1 normal, 2 extensive
+                // parece que não funciona...
 
 // You can switch webserver off if not necessary but probably better to leave it in.
 #if A_SERVER==1
