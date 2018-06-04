@@ -619,7 +619,8 @@ int readUdp(int packetSize)
 	if (WlanConnect(10) < 0) {
 #if DUSB>=1
 			Serial.print(F("readdUdp: ERROR connecting to WLAN"));
-			if (debug>=2) Serial.flush();
+			//if (debug>=2) Serial.flush();
+			Serial.flush();
 #endif
 			Udp.flush();
 			yield();
@@ -655,9 +656,9 @@ int readUdp(int packetSize)
 	if (remotePortNo == 123) {
 		// This is an NTP message arriving
 #if DUSB>=1
-		if (debug>0) {
+		//if (debug>0) {
 			Serial.println(F("readUdp:: NTP msg rcvd"));
-		}
+		//}
 #endif
 		gwayConfig.ntpErr++;
 		gwayConfig.ntpErrTime = millis();
@@ -679,7 +680,7 @@ int readUdp(int packetSize)
 		// will never be selected but is included as a reference only
 		case PKT_PUSH_DATA: // 0x00 UP
 #if DUSB>=1
-			if (debug >=1) {
+			//if (debug >=1) {
 				Serial.print(F("PKT_PUSH_DATA:: size ")); Serial.print(packetSize);
 				Serial.print(F(" From ")); Serial.print(remoteIpNo);
 				Serial.print(F(", port ")); Serial.print(remotePortNo);
@@ -689,8 +690,9 @@ int readUdp(int packetSize)
 					Serial.print(':');
 				}
 				Serial.println();
-				if (debug>=2) Serial.flush();
-			}
+				//if (debug>=2) Serial.flush();
+				Serial.flush();
+			//}
 #endif
 		break;
 	
@@ -698,7 +700,7 @@ int readUdp(int packetSize)
 		// (sensor) message sent with the code above.
 		case PKT_PUSH_ACK:	// 0x01 DOWN
 #if DUSB>=1
-			if (debug >= 2) {
+			//if (debug >= 2) {
 				Serial.print(F("PKT_PUSH_ACK:: size ")); 
 				Serial.print(packetSize);
 				Serial.print(F(" From ")); 
@@ -708,7 +710,7 @@ int readUdp(int packetSize)
 				Serial.print(F(", token: "));
 				Serial.println(token, HEX);
 				Serial.println();
-			}
+			//}
 #endif
 		break;
 	
@@ -723,9 +725,9 @@ int readUdp(int packetSize)
 		// XXX This message format may also be used for other downstream communucation
 		case PKT_PULL_RESP:	// 0x03 DOWN
 #if DUSB>=1
-			if (debug>=0) {
+			//if (debug>=0) {
 				Serial.println(F("PKT_PULL_RESP:: received"));
-			}
+			//}
 #endif
 			lastTmst = micros();					// Store the tmst this package was received
 			
@@ -761,29 +763,29 @@ int readUdp(int packetSize)
       if (Udp.write((char *)buff, 12) != 12) {
 #endif
 #if DUSB>=1
-				if (debug>=0)
+				//if (debug>=0)
 					Serial.println("PKT_PULL_ACK:: Error UDP write");
 #endif
 			}
 			else {
 #if DUSB>=1
-				if (debug>=0) {
+				//if (debug>=0) {
 					Serial.print(F("PKT_TX_ACK:: tmst="));
 					Serial.println(micros());
-				}
+				//}
 #endif
 			}
 
 			if (!Udp.endPacket()) {
 #if DUSB>=1
-				if (debug>=0)
+				//if (debug>=0)
 					Serial.println(F("PKT_PULL_DATALL Error Udp.endpaket"));
 #endif
 			}
 			
 			yield();
 #if DUSB>=1
-			if (debug >=1) {
+			//if (debug >=1) {
 				Serial.print(F("PKT_PULL_RESP:: size ")); 
 				Serial.print(packetSize);
 				Serial.print(F(" From ")); 
@@ -795,13 +797,13 @@ int readUdp(int packetSize)
 				data[packetSize] = 0;
 				Serial.print((char *)data);
 				Serial.println(F("..."));
-			}
+			//}
 #endif		
 		break;
 	
 		case PKT_PULL_ACK:	// 0x04 DOWN; the server sends a PULL_ACK to confirm PULL_DATA receipt
 #if DUSB>=1
-			if (debug >= 2) {
+			//if (debug >= 2) {
 				Serial.print(F("PKT_PULL_ACK:: size ")); Serial.print(packetSize);
 				Serial.print(F(" From ")); Serial.print(remoteIpNo);
 				Serial.print(F(", port ")); Serial.print(remotePortNo);	
@@ -811,7 +813,7 @@ int readUdp(int packetSize)
 					Serial.print(':');
 				}
 				Serial.println();
-			}
+			//}
 #endif
 		break;
 	
@@ -829,10 +831,10 @@ int readUdp(int packetSize)
 		break;
 		}
 #if DUSB>=2
-		if (debug>=1) {
+		//if (debug>=1) {
 			Serial.print(F("readUdp:: returning=")); 
 			Serial.println(packetSize);
-		}
+		//}
 #endif
 		// For downstream messages
 		return packetSize;
@@ -870,11 +872,13 @@ int sendUdp(IPAddress server, int port, uint8_t *msg, int length) {
 
 	//send the update
 #if DUSB>=1
-  if (debug>=2) Serial.println(F("WiFi connected"));
+  //if (debug>=2) Serial.println(F("WiFi connected"));
+	Serial.println(F("WiFi connected"));
 #endif	
 	if (!Udp.beginPacket(server, (int) port)) {
 #if DUSB>=1
-		if (debug>=1) Serial.println(F("sendUdp:: Error Udp.beginPacket"));
+		//if (debug>=1) Serial.println(F("sendUdp:: Error Udp.beginPacket"));
+		Serial.println(F("sendUdp:: Error Udp.beginPacket"));
 #endif
 		return(0);
 	}
@@ -897,10 +901,10 @@ int sendUdp(IPAddress server, int port, uint8_t *msg, int length) {
 	
 	if (!Udp.endPacket()) {
 #if DUSB>=1
-		if (debug>=1) {
+		//if (debug>=1) {
 			Serial.println(F("sendUdp:: Error Udp.endPacket"));
 			Serial.flush();
-		}
+		//}
 #endif
 		return(0);
 	}
@@ -920,20 +924,22 @@ bool UDPconnect() {
 	bool ret = false;
 	unsigned int localPort = _LOCUDPPORT;			// To listen to return messages from WiFi
 #if DUSB>=1
-	if (debug>=1) {
+	//if (debug>=1) {
 		Serial.print(F("Local UDP port="));
 		Serial.println(localPort);
-	}
+	//}
 #endif	
 	if (Udp.begin(localPort) == 1) {
 #if DUSB>=1
-		if (debug>=1) Serial.println(F("Connection successful"));
+		//if (debug>=1) 
+			Serial.println(F("Connection successful"));
 #endif
 		ret = true;
 	}
 	else{
 #if DUSB>=1
-		if (debug>=1) Serial.println("Connection failed");
+		//if (debug>=1) 
+			Serial.println("Connection failed");
 #endif
 	}
 	return(ret);
@@ -997,7 +1003,7 @@ void pullData() {
 #endif
 
 #if DUSB>=1
-    if (debug>= 2) {
+    //if (debug>= 2) {
 		yield();
 		Serial.print(F("PKT_PULL_DATA request, len=<"));
 		Serial.print(pullIndex);
@@ -1008,7 +1014,7 @@ void pullData() {
 		}
 		Serial.println();
 		if (debug>=2) Serial.flush();
-	}
+	//}
 #endif
 	return;
 }//pullData
@@ -1071,12 +1077,12 @@ void sendstat() {
     stat_index += j;
     status_report[stat_index] = 0; 							// add string terminator, for safety
 
-    if (debug>=2) {
+    //if (debug>=2) {
 		Serial.print(F("stat update: <"));
 		Serial.print(stat_index);
 		Serial.print(F("> "));
 		Serial.println((char *)(status_report+12));			// DEBUG: display JSON stat
-	}
+	//}
 	
 	if (stat_index > STATUS_SIZE) {
 		Serial.println(F("sendstat:: ERROR buffer too big"));
@@ -1227,7 +1233,7 @@ void setup() {
 	delay(500);
 	
 	// We choose the Gateway ID to be the Ethernet Address of our Gateway card
-    // display results of getting hardware address
+    	// display results of getting hardware address
 	// 
   Serial.print("Gateway ID: ");
 	printHexDigit(MAC_array[0]);
@@ -1299,6 +1305,10 @@ void setup() {
 	
 	// Setup and initialise LoRa state machine of _loramModem.ino
 	_state = S_INIT;
+#if DUSB>=2
+	printTime();
+	Serial.println("ESP-sc-gway::initLoraModem");
+#endif
 	initLoraModem();
 	
 	if (_cad) {
@@ -1337,7 +1347,7 @@ void setup() {
 #endif
 
 	Serial.println(F("--------------------------------------"));
-}//setup
+}// end of setup
 
 
 
@@ -1369,6 +1379,10 @@ void loop ()
 	// in userspace in loop().
 	//
 	if (_event != 0x00) {
+#if DUSB>=2
+		printTime();
+		Serial.println("ESP-sc-gway::loop::calling stateMachine()");
+#endif
 		stateMachine();					// start the state machine
 		_event = 0;						// reset value
 		return;							// Restart loop
@@ -1380,7 +1394,7 @@ void loop ()
 	if ( (((nowTime - statr[0].tmst) / 1000000) > _MSG_INTERVAL ) &&
 		(msgTime < statr[0].tmst)) {
 #if DUSB>=1
-		Serial.print("ESP-sc-gway::loop::reinitiate lora modem");
+		Serial.print("ESP-sc-gway::loop::reinitiating lora modem");
 #endif
 		initLoraModem();
 		if (_cad) {
@@ -1482,7 +1496,7 @@ void loop ()
 	
 		if ((_state == S_SCAN) && (sf==SF12)) {
 #if DUSB>=1
-      printTime();
+      			printTime();
 			Serial.println(F("ESP-sc-gway::loop::hop"));
 #endif
 			hop(); 
@@ -1505,8 +1519,11 @@ void loop ()
 		}
 		printTime();
 		//else if (debug>=3) { Serial.print(F(" state=")); Serial.println(_state); } 
-    Serial.print(F("ESP-sc-gway::loop::state="));
-    Serial.println(_state);
+#if DUSB>=2
+		printTime();
+		Serial.print(F("ESP-sc-gway::loop::state="));
+    		Serial.println(_state);
+#endif
 		inHop = false;									// Reset re-entrane protection of HOP
 		yield();
 	}
@@ -1530,7 +1547,7 @@ void loop ()
 			printTime();
 			Serial.println(F("ESP-sc-gway::loop::>"));
 			//if (debug>=2) Serial.flush();
-     Serial.flush();
+     			Serial.flush();
 		//}
 #endif	
 
@@ -1568,10 +1585,10 @@ void loop ()
 			printTime();
 			Serial.print(F("ESP-sc-gway::loop::PULL <"));
 			//if (debug>=2) Serial.flush();
-      Serial.flush();
+      			Serial.flush();
 		//}
 #endif
-        pullData();										// Send PULL_DATA message to server
+        	pullData();										// Send PULL_DATA message to server
 		initLoraModem();
 		if (_cad) {
 			_state = S_SCAN;
@@ -1585,9 +1602,9 @@ void loop ()
 		writeRegister(REG_IRQ_FLAGS, 0xFF);				// Reset all interrupt flags
 #if DUSB>=1
 		//if (debug>=1) {
-			Serial.println(F("ESP-sc-gway::loop::>"));
+		Serial.println(F("ESP-sc-gway::loop::>"));
 			//if (debug>=2) Serial.flush();
-     Serial.flush();
+     		Serial.flush();
 		//}
 #endif		
 		pulltime = nowSeconds;
