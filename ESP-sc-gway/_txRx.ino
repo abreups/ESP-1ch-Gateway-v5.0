@@ -284,6 +284,8 @@ int buildPacket(uint32_t tmst, uint8_t *buff_up, struct LoraUp LoraUp, bool inte
 
 #if DUSB>=1	
 	//if (debug>=1) {  // paulo
+		printTime();
+		Serial.println("_txRx::buildPacket");
 		Serial.print(F("pRSSI: "));
 		Serial.print(prssi-rssicorr);
 		Serial.print(F(" RSSI: "));
@@ -452,6 +454,8 @@ int buildPacket(uint32_t tmst, uint8_t *buff_up, struct LoraUp LoraUp, bool inte
 	buff_up[buff_index] = 0; 							// add string terminator, for safety
 #if DUSB>=1
 	//if (debug>=2) {  // paulo
+		printTime();
+		Serial.println("_txRx::buildPacket");
 		Serial.print(F("RXPK:: "));
 		Serial.println((char *)(buff_up + 12));			// DEBUG: display JSON payload
 	//}
@@ -524,6 +528,8 @@ int receivePacket()
 			if (!sendUdp(ttnServer, _TTNPORT, buff_up, build_index)) {
 				return(-1); 							// received a message
 			}
+			printTime("_txRx::sendUdp");
+			Serial.println();
 			yield();
 #endif
 
