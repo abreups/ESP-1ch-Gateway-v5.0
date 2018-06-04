@@ -518,7 +518,9 @@ int receivePacket()
 			// This is one of the potential problem areas.
 			// If possible, USB traffic should be left out of interrupt routines
 			// rxpk PUSH_DATA received from node is rxpk (*2, par. 3.2)
+
 #ifdef _TTNSERVER
+			// This can be your private LoRa Network server
 			if (!sendUdp(ttnServer, _TTNPORT, buff_up, build_index)) {
 				return(-1); 							// received a message
 			}
