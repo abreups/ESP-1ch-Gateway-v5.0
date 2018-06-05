@@ -1030,7 +1030,14 @@ void stateMachine()
 	uint8_t mask  = readRegister(REG_IRQ_FLAGS_MASK);
 	uint8_t intr  = flags & ( ~ mask );				// Only react on non masked interrupts
 	uint8_t rssi;
-	
+#if DUSB>=1
+  Serial.print("flags = ");
+  Serial.println(flags, HEX);
+  Serial.print("mask = ");
+  Serial.println(mask, HEX);
+  Serial.print("intr = ");
+  Serial.println(intr, HEX);
+#endif
 	if (intr == 0x00) {
 #if DUSB>=1
 		// Something strange has happened: There has been an event
@@ -1053,6 +1060,10 @@ void stateMachine()
 	
 	// Small state machine inside the interrupt handler
 	// as next actions are depending on the state we are in.
+#if DUSB>=1
+  Serial.print("_state = ");
+  Serial.println(_state, DEC);
+#endif
 	switch (_state) 
 	{
 	
@@ -1167,6 +1178,7 @@ void stateMachine()
 	  //
 	  case S_CAD:   // <======================================================================= S_RX
 
+    // CAD = Channel Activity Detection
 		// Intr=IRQ_LORA_CDDETD_MASK
 		// We have to set the sf based on a strong RSSI for this channel
 		//

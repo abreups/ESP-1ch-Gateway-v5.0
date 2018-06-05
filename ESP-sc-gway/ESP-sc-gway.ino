@@ -1381,6 +1381,8 @@ void loop ()
 	if (_event != 0x00) {
 #if DUSB>=2
 		printTime();
+    Serial.print("Event = ");
+    Serial.println(_event);
 		Serial.println("ESP-sc-gway::loop::calling stateMachine()");
 #endif
 		stateMachine();					// start the state machine
@@ -1405,6 +1407,9 @@ void loop ()
 			_state = S_RX;
 			rxLoraModem();
 		}
+#if DUSB>=2
+   Serial.print("ESP-sc-gway::loop::reseting interrupts");
+#endif
 		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
 		writeRegister(REG_IRQ_FLAGS, 0xFF);				// Reset all interrupt flags
 		msgTime = nowTime;

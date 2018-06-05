@@ -528,8 +528,8 @@ int receivePacket()
 			if (!sendUdp(ttnServer, _TTNPORT, buff_up, build_index)) {
 				return(-1); 							// received a message
 			}
-			printTime("_txRx::sendUdp");
-			Serial.println();
+			printTime();
+			Serial.println("_txRx::sendUdp");
 			yield();
 #endif
 

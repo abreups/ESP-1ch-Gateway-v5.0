@@ -185,7 +185,7 @@
 // MQTT definitions, these settings should be standard for TTN
 // and need not changing
 #define _TTNPORT 1700						    // Standard port for TTN
-#define _TTNSERVER "18.228.38.170"  // servidor loraserver do Evaldo
+#define _TTNSERVER "18.228.39.211"  // servidor loraserver do Evaldo
 
 // If you have a second back-end server defined such as Semtech or loriot.io
 // your can define _THINGPORT and _THINGSERVER with your own value.
