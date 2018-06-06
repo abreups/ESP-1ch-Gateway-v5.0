@@ -612,8 +612,7 @@ int WlanConnect(int maxTry) {
 //	Or number of characters read is success
 //
 // ----------------------------------------------------------------------------
-int readUdp(int packetSize)
-{
+int readUdp(int packetSize) {
 	uint8_t protocol;
 	uint16_t token;
 	uint8_t ident; 
@@ -622,20 +621,20 @@ int readUdp(int packetSize)
 
 	if (WlanConnect(10) < 0) {
 #if DUSB>=1
-			Serial.print(F("readdUdp: ERROR connecting to WLAN"));
-			//if (debug>=2) Serial.flush();
+      printTime();
+			Serial.print(F("ESP-sc-gway::readdUdp:: ERROR connecting to WLAN"));
 			Serial.flush();
 #endif
 			Udp.flush();
 			yield();
 			return(-1);
 	}
-
 	yield();
-	
+
 	if (packetSize > RX_BUFF_SIZE) {
 #if DUSB>=1
-		Serial.print(F("readUDP:: ERROR package of size: "));
+    printTime();
+		Serial.print(F("ESP-sc-gway::readUDP:: ERROR - UDP package size too big: "));
 		Serial.println(packetSize);
 #endif
 		Udp.flush();
@@ -646,7 +645,8 @@ int readUdp(int packetSize)
 	// In practice however this can be any sender!
 	if (Udp.read(buff_down, packetSize) < packetSize) {
 #if DUSB>=1
-		Serial.println(F("readUsb:: Reading less chars"));
+    printTime();
+		Serial.println(F("ESP-sc-gway::readUsb:: UDP packet reading error - fewer chars"));
 		return(-1);
 #endif
 	}
@@ -658,9 +658,10 @@ int readUdp(int packetSize)
 	unsigned int remotePortNo = Udp.remotePort();
 
 	if (remotePortNo == 123) {
-		// This is an NTP message arriving
-#if DUSB>=1
-		Serial.println(F("readUdp:: NTP msg rcvd"));
+		// This is an NTP message arriving (port 123 is ntp)
+#if DUSB>=2
+    printTime();
+		Serial.println(F("ESP-sc-gway::readUdp:: NTP msg rcvd from LoRa server"));
 #endif
 		gwayConfig.ntpErr++;
 		gwayConfig.ntpErrTime = millis();
@@ -677,156 +678,152 @@ int readUdp(int packetSize)
 		// now parse the message type from the server (if any)
 		switch (ident) {
 
-		// This message is used by the gateway to send sensor data to the
-		// server. As this function is used for downstream only, this option
-		// will never be selected but is included as a reference only
-		case PKT_PUSH_DATA: // 0x00 UP
+        case PKT_PUSH_DATA: // 0x00 UP
+        // This message is used by the gateway to send sensor data to the
+        // server. As this function is used for downstream only, this option
+        // will never be selected but is included as a reference only
 #if DUSB>=1
+            printTime();
+            Serial.println(F("ESP-sc-gway::readUdp:: msg rcvd from LoRa server:"));
+      			Serial.print(F("PKT_PUSH_DATA:: size ")); Serial.print(packetSize);
+      			Serial.print(F(" From ")); Serial.print(remoteIpNo);
+      			Serial.print(F(", port ")); Serial.print(remotePortNo);
+      			Serial.print(F(", data: "));
+      			for (int i=0; i<packetSize; i++) {
+      				Serial.print(buff_down[i],HEX);
+      				Serial.print(':');
+      			}
+      			Serial.println();
+      			Serial.flush();
+#endif
+            break;
 
-			Serial.print(F("PKT_PUSH_DATA:: size ")); Serial.print(packetSize);
-			Serial.print(F(" From ")); Serial.print(remoteIpNo);
-			Serial.print(F(", port ")); Serial.print(remotePortNo);
-			Serial.print(F(", data: "));
-			for (int i=0; i<packetSize; i++) {
-				Serial.print(buff_down[i],HEX);
-				Serial.print(':');
-			}
-			Serial.println();
-			//if (debug>=2) Serial.flush();
-			Serial.flush();
+        case PKT_PUSH_ACK:  // 0x01 DOWN
+        // This message is sent by the server to acknoledge receipt of a
+        // (sensor) message sent with the code above.
+#if DUSB>=1
+            printTime();
+            Serial.println(F("ESP-sc-gway::readUdp:: msg rcvd from LoRa server:"));
+      			Serial.print(F("PKT_PUSH_ACK:: size ")); Serial.print(packetSize);
+      			Serial.print(F(" From ")); Serial.print(remoteIpNo);
+      			Serial.print(F(", port ")); Serial.print(remotePortNo);
+      			Serial.print(F(", token: ")); Serial.println(token, HEX);
+      			Serial.println();
+#endif
+            break;
+	
+        case PKT_PULL_DATA:	// 0x02 UP
+        // ???
+        // ???
+#if DUSB>=1
+            printTime();
+            Serial.print(F("ESP-sc-gway::readUdp::PKT_PULL_DATA received"));
+#endif
+            break;
 
-#endif
-		break;
-	
-		// This message is sent by the server to acknoledge receipt of a
-		// (sensor) message sent with the code above.
-		case PKT_PUSH_ACK:	// 0x01 DOWN
+        case PKT_PULL_RESP: // 0x03 DOWN
+        // This message type is used to confirm OTAA message to the node
+        // XXX This message format may also be used for other downstream communucation
 #if DUSB>=1
-			Serial.print(F("PKT_PUSH_ACK:: size ")); 
-			Serial.print(packetSize);
-			Serial.print(F(" From ")); 
-			Serial.print(remoteIpNo);
-			Serial.print(F(", port ")); 
-			Serial.print(remotePortNo);
-			Serial.print(F(", token: "));
-			Serial.println(token, HEX);
-			Serial.println();
+            printTime();
+            Serial.println(F("ESP-sc-gway::readUdp:: PKT_PULL_RESP received"));
 #endif
-		break;
-	
-		case PKT_PULL_DATA:	// 0x02 UP
-#if DUSB>=1
-      printTime();
-			Serial.print(F("ESP-sc-gway::readUdp:: Pull Data"));
-#endif
-		break;
-	
-		// This message type is used to confirm OTAA message to the node
-		// XXX This message format may also be used for other downstream communucation
-		case PKT_PULL_RESP:	// 0x03 DOWN
-#if DUSB>=1
-      printTime();
-			Serial.println(F("ESP-sc-gway::readUdp:: PKT_PULL_RESP received"));
-#endif
-			lastTmst = micros();					// Store the tmst this package was received
+            lastTmst = micros();					// Store the tmst this package was received
 			
-			// Send to the LoRa Node first (timing) and then do messaging
-			_state=S_TX;
-			if (sendPacket(data, packetSize-4) < 0) {
-				return(-1);
-			}
+            // Send to the LoRa Node first (timing) and then do messaging
+            _state=S_TX;
+            if (sendPacket(data, packetSize-4) < 0) {
+                return(-1);
+            }
 		
-			// Now respond with an PKT_TX_ACK; 0x04 UP
-			buff[0]=buff_down[0];
-			buff[1]=buff_down[1];
-			buff[2]=buff_down[2];
-			//buff[3]=PKT_PULL_ACK;				// Pull request/Change of Mogyi
-			buff[3]=PKT_TX_ACK;
-			buff[4]=MAC_array[0];
-			buff[5]=MAC_array[1];
-			buff[6]=MAC_array[2];
-			buff[7]=0xFF;
-			buff[8]=0xFF;
-			buff[9]=MAC_array[3];
-			buff[10]=MAC_array[4];
-			buff[11]=MAC_array[5];
-			buff[12]=0;
+            // Now respond with an PKT_TX_ACK; 0x04 UP
+            buff[0]=buff_down[0];
+            buff[1]=buff_down[1];
+            buff[2]=buff_down[2];
+            //buff[3]=PKT_PULL_ACK;				// Pull request/Change of Mogyi
+            buff[3]=PKT_TX_ACK;
+            buff[4]=MAC_array[0];
+            buff[5]=MAC_array[1];
+            buff[6]=MAC_array[2];
+            buff[7]=0xFF;
+            buff[8]=0xFF;
+            buff[9]=MAC_array[3];
+            buff[10]=MAC_array[4];
+            buff[11]=MAC_array[5];
+            buff[12]=0;
 #if DUSB>=1
-      printTime();
-			Serial.println(F("ESP-sc-gway::readUdp:: TX buff filled"));
+            printTime();
+            Serial.println(F("ESP-sc-gway::readUdp:: TX buff filled"));
 #endif
-			// Only send the PKT_PULL_ACK to the UDP socket that just sent the data!!!
-			Udp.beginPacket(remoteIpNo, remotePortNo);
+            // Only send the PKT_PULL_ACK to the UDP socket that just sent the data!!!
+            Udp.beginPacket(remoteIpNo, remotePortNo);
 #ifdef ESP32BUILD
-			if (Udp.write(buff, 12) != 12) {
+            if (Udp.write(buff, 12) != 12) {
 #else
-      if (Udp.write((char *)buff, 12) != 12) {
+            if (Udp.write((char *)buff, 12) != 12) {
 #endif
 #if DUSB>=1
-          printTime();
-					Serial.println("ESP-sc-gway::readUdp::PKT_PULL_ACK Error UDP write");
+                printTime();
+                Serial.println("ESP-sc-gway::readUdp::PKT_PULL_ACK Error UDP write");
 #endif
-			}
-			else {
+            } else {
 #if DUSB>=1
-        printTime();
-				Serial.print(F("ESP-sc-gway::readUdp::PKT_TX_ACK tmst="));
-				Serial.println(micros());
+                printTime();
+                Serial.print(F("ESP-sc-gway::readUdp::PKT_TX_ACK tmst="));
+                Serial.println(micros());
 #endif
-			}
+            }
 
-			if (!Udp.endPacket()) {
+            if (!Udp.endPacket()) {
 #if DUSB>=1
-          printTime();
-					Serial.println(F("ESP-sc-gway::readUdp::PKT_PULL_DATALL Error Udp.endpaket"));
+                printTime();
+                Serial.println(F("ESP-sc-gway::readUdp::PKT_PULL_DATALL Error Udp.endpaket"));
 #endif
-			}
-			
-			yield();
+            }
+            yield();
 #if DUSB>=1
-      printTime();
-			Serial.print(F("ESP-sc-gway::readUdp::PKT_PULL_RESP size ")); 
-			Serial.print(packetSize);
-			Serial.print(F(" From ")); 
-			Serial.print(remoteIpNo);
-			Serial.print(F(", port ")); 
-			Serial.print(remotePortNo);	
-			Serial.print(F(", data: "));
-			data = buff_down + 4;
-			data[packetSize] = 0;
-			Serial.print((char *)data);
-			Serial.println(F("..."));
+            printTime();
+            Serial.print(F("ESP-sc-gway::readUdp::PKT_PULL_RESP size ")); Serial.print(packetSize);
+            Serial.print(F(" From ")); Serial.print(remoteIpNo);
+            Serial.print(F(", port ")); Serial.print(remotePortNo);	
+            Serial.print(F(", data: ")); data = buff_down + 4;
+            data[packetSize] = 0;
+            Serial.print((char *)data); Serial.println(F("..."));
 #endif		
-		break;
+            break;
 	
-		case PKT_PULL_ACK:	// 0x04 DOWN; the server sends a PULL_ACK to confirm PULL_DATA receipt
+        case PKT_PULL_ACK:	// 0x04 DOWN
+        // the server sends a PULL_ACK to confirm PULL_DATA receipt
+        // 
 #if DUSB>=1
-      printTime();
-			Serial.print(F("ESP-sc-gway::readUdp::PKT_PULL_ACK size ")); Serial.print(packetSize);
-			Serial.print(F(" From ")); Serial.print(remoteIpNo);
-			Serial.print(F(", port ")); Serial.print(remotePortNo);	
-			Serial.print(F(", data: "));
-			for (int i=0; i<packetSize; i++) {
-				Serial.print(buff_down[i],HEX);
-				Serial.print(':');
-			}
-			Serial.println();
+            printTime();
+            Serial.print(F("ESP-sc-gway::readUdp::PKT_PULL_ACK size ")); Serial.print(packetSize);
+            Serial.print(F(" From ")); Serial.print(remoteIpNo);
+            Serial.print(F(", port ")); Serial.print(remotePortNo);	
+            Serial.print(F(", data: "));
+            for (int i=0; i<packetSize; i++) {
+            	Serial.print(buff_down[i],HEX);
+            	Serial.print(':');
+            }
+            Serial.println();
 #endif
-		break;
+            break;
 	
-		default:
+        default:
+        // 
+        //
 #if GATEWAYMGT==1
-			// For simplicity, we send the first 4 bytes too
-			gateway_mgt(packetSize, buff_down);
+            // For simplicity, we send the first 4 bytes too
+            gateway_mgt(packetSize, buff_down);
 #else
 
 #endif
-#if DUSB>=1
-      printTime();
-			Serial.print(F("ESP-sc-gway::readUdp ERROR ident not recognized="));
-			Serial.println(ident);
+#if DUSB>=2
+            printTime();
+            Serial.print(F("ESP-sc-gway::readUdp ERROR ident not recognized="));
+            Serial.println(ident);
 #endif
-		break;
+            break;
 		}
 #if DUSB>=2
     printTime();
@@ -835,8 +832,10 @@ int readUdp(int packetSize)
 #endif
 		// For downstream messages
 		return packetSize;
-	}
-}//readUdp
+
+	} // end of switch ident
+
+} // end of readUdp
 
 
 // ----------------------------------------------------------------------------
@@ -1532,7 +1531,7 @@ void loop ()
 
 		// If the gateway behaves like a node, we do from time to time
 		// send a node message to the backend server.
-		// The Gateway nod emessage has nothing to do with the STAT_INTERVAL
+		// The Gateway node message has nothing to do with the STAT_INTERVAL
 		// message but we schedule it in the same frequency.
 		//
 #if GATEWAYNODE==1
