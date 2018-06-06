@@ -153,16 +153,12 @@ uint8_t readRegister(uint8_t addr)
 #if MUTEX_SPI==1
 	if(!GetMutex(&mutexSPI)) {
 #if DUSB>=1
-		//if (debug>=0) { // paulo
 			gwayConfig.reents++;
-			Serial.print(F("readRegister:: read reentry"));
-			printTime();
-			Serial.println();
-			//if (debug>=2) Serial.flush();  // paulo
+      printTime();
+			Serial.println(F("_loraModem::readRegister::read reentry"));
       Serial.flush(); // incluido paulo
 			delayMicroseconds(50);
 			initLoraModem();
-		//}
 #endif
 		return 0;
 	}
@@ -202,16 +198,12 @@ void writeRegister(uint8_t addr, uint8_t value)
 #if MUTEX_SPO==1
 	if(!GetMutex(&mutexSPI)) {
 #if DUSB>=1
-		//if (debug>=0) {  // paulo
 			gwayConfig.reents++;
-			Serial.print(F("writeRegister:: write reentry"));
-			printTime();
-			Serial.println();
+      printTime();
+			Serial.println(F("_loraModem::writeRegister::write reentry"));
 			delayMicroseconds(50);
 			initLoraModem();
-			//if (debug>=2) Serial.flush(); // paulo
       Serial.flush();  // incluido paulo
-		//}
 #endif
 		return;
 	}
@@ -247,17 +239,13 @@ void writeBuffer(uint8_t addr, uint8_t *buf, uint8_t len)
 	//noInterrupts();							// XXX
 #if MUTEX_SPO==1
 	if(!GetMutex(&mutexSPI)) {
-#if DUSB>=2 // paulo era 1
-		//if (debug>=0) {  // paulo
+#if DUSB>=2
 			gwayConfig.reents++;
-			Serial.print(F("writeBuffer:: write reentry"));
-			printTime();
-			Serial.println();
+      printTime();
+      Serial.println(F("_loraModem::writeBuffer::write reentry"));
 			delayMicroseconds(50);
 			initLoraModem();
-			//if (debug>=2) Serial.flush();  // paulo
      Serial.flush(); // incluido paulo
-		//}
 #endif
 		return;
 	}
@@ -294,10 +282,9 @@ void setRate(uint8_t sf, uint8_t crc)
 	uint8_t mc1=0, mc2=0, mc3=0;
 #if DUSB>=2
 	if ((sf<SF7) || (sf>SF12)) {
-		if (debug>=1) {
-			Serial.print(F("setRate:: SF="));
+      printTime();
+			Serial.print(F("_loraModem::setRate:: SF="));
 			Serial.println(sf);
-		}
 		return;
 	}
 #endif
@@ -345,7 +332,7 @@ void setFreq(uint32_t freq) {
     uint64_t frf = ((uint64_t)freq << 19) / 32000000;
 #if DUSB>=2
     printTime();
-    Serial.print(" Gateway frequency set to: ");
+    Serial.print("_loraModem::setFreq::Gateway frequency set to: ");
     Serial.println((long)freq);
 #endif
     writeRegister(REG_FRF_MSB, (uint8_t)(frf>>16) );
@@ -368,7 +355,11 @@ void setPow(uint8_t powe)
 	
 	uint8_t pac = (0x80 | (powe & 0xF)) & 0xFF;
 	writeRegister(REG_PAC, (uint8_t)pac);								// set 0x09 to pac
-	
+#if DUSB>=2
+  printTime();
+  Serial.print("_loraModem::setPow::gateway power set to 0x");
+  Serial.println((uint8_t)pac, HEX);
+#endif
 	// XXX Power settings for CFG_sx1272 are different
 	
 	return;
@@ -415,8 +406,11 @@ void  opmode(uint8_t mode)
 void hop() {
 	// If we are already in a hop function, do not proceed
 	if (!inHop) {
-
 		inHop=true;
+#if DUSB>=2
+    printTime();
+    Serial.println("_loraModem::hop::Entering in hop mode!");
+#endif
 		opmode(OPMODE_STANDBY);
 		ifreq = (ifreq + 1)% NUM_HOPS ;
 		setFreq(freqs[ifreq]);
@@ -426,10 +420,8 @@ void hop() {
 	}
 #if DUSB>=2
 	else {
-		//if (debug >= 3) {
       printTime();
 			Serial.println(F("Hop:: Re-entrance try"));
-		//}
 	}
 #endif
 }
@@ -446,56 +438,47 @@ void hop() {
 uint8_t receivePkt(uint8_t *payload)
 {
     uint8_t irqflags = readRegister(REG_IRQ_FLAGS);			// 0x12; read back flags
-
     cp_nb_rx_rcv++;											// Receive statistics counter
 
     //  Check for payload IRQ_LORA_CRCERR_MASK=0x20 set
-    if((irqflags & IRQ_LORA_CRCERR_MASK) == IRQ_LORA_CRCERR_MASK)
-    {
+    if((irqflags & IRQ_LORA_CRCERR_MASK) == IRQ_LORA_CRCERR_MASK) {
 #if DUSB>=2
         printTime();
-        Serial.println(F("CRC"));
+        Serial.println(F("CRC error (?)"));
 #endif
-		// Reset CRC flag 0x20
+		    // Reset CRC flag 0x20
         writeRegister(REG_IRQ_FLAGS, (uint8_t)(IRQ_LORA_CRCERR_MASK || IRQ_LORA_RXDONE_MASK));	// 0x12; clear CRC (== 0x20) flag
         return 0;
-    }
-	else {
+    } else {
         cp_nb_rx_ok++;										// Receive OK statistics counter
-
         uint8_t currentAddr = readRegister(REG_FIFO_RX_CURRENT_ADDR);	// 0x10
         uint8_t receivedCount = readRegister(REG_RX_NB_BYTES);	// 0x13; How many bytes were read
 #if DUSB>=2
-		//if ((debug>=0) && (currentAddr > 64)) {
    if(currentAddr > 64) {
 			printTime();
-			Serial.print(F("receivePkt:: Rx addr>64"));
+			Serial.print(F("_loraModem::receivePkt:: Rx addr>64"));
 			Serial.println(currentAddr);
-			//if (debug>=2) Serial.flush();
      Serial.flush();
 		}
 #endif
-        writeRegister(REG_FIFO_ADDR_PTR, (uint8_t) currentAddr);		// 0x0D 
+    writeRegister(REG_FIFO_ADDR_PTR, (uint8_t) currentAddr);		// 0x0D 
 
 		if (receivedCount > 64) {
 #if DUSB>=2
       printTime();
-			Serial.print(F("receivePkt:: receivedCount="));
+			Serial.print(F("_loraModem::receivePkt:: receivedCount="));
 			Serial.println(receivedCount);
-			if (debug>=2) Serial.flush();
+			Serial.flush();
 #endif
 			receivedCount=64;
 		}
 #if DUSB>=2
-		//else if (debug>=2) {
-    printTime();
-			Serial.print(F("ReceivePkt:: addr="));
-			Serial.print(currentAddr);
+      printTime();
+			Serial.print(F("_loraModem::ReceivePkt:: addr="));
+			Serial.println(currentAddr);
 			Serial.print(F(", len="));
 			Serial.println(receivedCount);
-			//if (debug>=2) Serial.flush();
-     Serial.flush();
-		//}
+      Serial.flush();
 #endif
         for(int i = 0; i < receivedCount; i++)
         {
@@ -518,15 +501,12 @@ uint8_t receivePkt(uint8_t *payload)
 // 
 // NOTE:: writeRegister functions should not be used outside interrupts
 // ----------------------------------------------------------------------------
-bool sendPkt(uint8_t *payLoad, uint8_t payLength)
-{
+bool sendPkt(uint8_t *payLoad, uint8_t payLength) {
 #if DUSB>=2
 	if (payLength>=128) {
-		//if (debug>=1) { // paulo
     printTime();
-			Serial.print("sendPkt:: len=");
-			Serial.println(payLength);
-		//}
+    Serial.print("_loraModem::sendPkt::len=");
+    Serial.println(payLength);
 		return false;
 	}
 #endif
@@ -559,11 +539,10 @@ bool sendPkt(uint8_t *payLoad, uint8_t payLength)
 // Parameter: uint32-t tmst gives the micros() value when transmission should start.
 // ----------------------------------------------------------------------------
 
-void loraWait(uint32_t tmst)
-{
+void loraWait(uint32_t tmst) {
 #if DUSB>=2
   printTime();
-  Serial.println("módulo _loraModem : função loraWait");
+  Serial.println("_loraModem::loraWait");
 #endif
 	uint32_t startTime = micros();						// Start of the loraWait function
 	tmst += txDelay;
@@ -577,12 +556,10 @@ void loraWait(uint32_t tmst)
 #if DUSB>=2
 	else if ((waitTime+20) < 0) {
     printTime();
-		Serial.println(F("loraWait TOO LATE"));
+		Serial.println(F("_loraModem::loraWait::TOO LATE"));
 	}
-	
-	//if (debug >=1) { // paulo
-  printTime();
-		Serial.print(F("start: ")); 
+    printTime();
+		Serial.print(F("_loraModem::loraWait::start: ")); 
 		Serial.print(startTime);
 		Serial.print(F(", end: "));
 		Serial.print(tmst);
@@ -591,9 +568,7 @@ void loraWait(uint32_t tmst)
 		Serial.print(F(", delay="));
 		Serial.print(txDelay);
 		Serial.println();
-		//if (debug>=2) Serial.flush();
     Serial.flush();
-	//}
 #endif
 }
 
@@ -628,18 +603,15 @@ void txLoraModem(uint8_t *payLoad, uint8_t payLength, uint32_t tmst, uint8_t sfT
 						uint8_t powe, uint32_t freq, uint8_t crc, uint8_t iiq)
 {
 #if DUSB>=2
-	//if (debug>=1) {
 		// Make sure that all serial stuff is done before continuing
 		printTime();
-		Serial.print(F("txLoraModem::"));
+		Serial.print(F("_loraModem::txLoraModem::"));
 		Serial.print(F("  powe: ")); Serial.print(powe);
 		Serial.print(F(", freq: ")); Serial.print(freq);
 		Serial.print(F(", crc: ")); Serial.print(crc);
 		Serial.print(F(", iiq: 0X")); Serial.print(iiq,HEX);
 		Serial.println();
-		//if (debug>=2) Serial.flush();
-   Serial.flush();
-	//}
+    Serial.flush();
 #endif
 	_state = S_TX;
 		
@@ -733,7 +705,7 @@ void rxLoraModem()
     //opmode(OPMODE_SLEEP);										// set 0x01 to 0x00
 	
 	// 3. Set frequency based on value in freq
-	setFreq(freqs[ifreq]);										// set to 868.1MHz
+	setFreq(freqs[ifreq]);
 
 	// 4. Set spreading Factor and CRC
     setRate(sf, 0x04);
@@ -761,11 +733,9 @@ void rxLoraModem()
 	// set frequency hopping
 	if (_hop) {
 #if DUSB>=1
-		//if (debug >= 1) { 
 			printTime();
 			Serial.print(F("rxLoraModem:: Hop, channel=")); 
 			Serial.println(ifreq); 
-		//}
 #endif
 		writeRegister(REG_HOP_PERIOD, 0x01);					// 0x24, 0x01 was 0xFF
 		// Set RXDONE interrupt to dio0
@@ -823,19 +793,21 @@ void cadScanner()
 	
 	// 3. Set frequency based on value in freq					// XXX New, might be needed when receiving down
 #if DUSB>=2
-	//if ((debug>=1) && (ifreq>9)) {
   if (ifreq>9) {
 		printTime();
-		Serial.print(F("cadScanner:: E Freq="));
+		Serial.print(F("_loraModem::cadScanner::E Freq="));
 		Serial.println(ifreq);
-		//if (debug>=2) Serial.flush();
-   Serial.flush();
+    Serial.flush();
 		ifreq=0;
 	}
 #endif
 	setFreq(freqs[ifreq]);
 
 	// For every time we stat the scanner, we set the SF to the begin value
+#if DUSB>=2
+  printTime();
+  Serial.println("_loraModem::cadScanner::setting SF to SF7");
+#endif
 	sf = SF7;													// we make SF the lower, this is faster!
 	
 	// 4. Set spreading Factor and CRC
@@ -898,31 +870,38 @@ void initLoraModem()
   else if (version == 0x12) {
         // sx1276?
 #if DUSB>=2
-            //if (debug >=1) 
         printTime();
-        Serial.println(F("SX1276 starting"));
+        Serial.println(F("_loraModem::initLoraModem::SX1276 starting"));
 #endif
             sx1272 = false;
-  } 
+  }
   else {
 #if DUSB>=2
     printTime();
-    Serial.print(F("Unknown transceiver="));
+    Serial.print(F("Unknown transceiver= 0x"));
     Serial.println(version,HEX);
 #endif
     die("");
     }
 
 	// 2. Set radio to sleep
+#if DUSB>=2
+  printTime();
+  Serial.println(F("_loraModem::initLoraModem::setting OPMODE_SLEEP"));
+#endif
 	opmode(OPMODE_SLEEP);										// set register 0x01 to 0x00
 
 	// 1 Set LoRa Mode
+#if DUSB>=2
+  printTime();
+  Serial.println(F("_loraModem::initLoraModem::setting OPMODE_LORA"));
+#endif
 	opmode(OPMODE_LORA);										// set register 0x01 to 0x80
 	
 	// 3. Set frequency based on value in freq
 	ifreq = 0; 
 	freq=freqs[0];
-	setFreq(freq);												// set to 868.1MHz
+	setFreq(freq);
 	
 	// 4. Set spreading Factor
     setRate(sf, 0x04);
@@ -958,6 +937,10 @@ void initLoraModem()
 	writeRegister(REG_IRQ_FLAGS_MASK, 0x00);
 	
 	// 9. clear all radio IRQ flags
+#if DUSB>=2
+    printTime();
+    Serial.println(F("_loraModem::initLoraModem::clear all radio IRQ flags"));
+#endif
     writeRegister(REG_IRQ_FLAGS, 0xFF);
 }// initLoraModem
 
@@ -1015,12 +998,9 @@ void stateMachine()
 #if MUTEX_INT==1	
 	if(!GetMutex(&inIntr)) {
 #if DUSB>=1
-		//if (debug>=0) {
-			printTime();
-			Serial.println(F("eInt:: Mutex"));
-			//if (debug>=2) Serial.flush();
-     Serial.flush();
-		//}
+    printTime();
+    Serial.println(F("_loraModem::stateMachine::eInt Mutex (sei lá o que é isso)"));
+    Serial.flush();
 #endif
 		return;
 	}
@@ -1031,21 +1011,19 @@ void stateMachine()
 	uint8_t intr  = flags & ( ~ mask );				// Only react on non masked interrupts
 	uint8_t rssi;
 #if DUSB>=1
-  Serial.print("flags = ");
-  Serial.println(flags, HEX);
-  Serial.print("mask = ");
-  Serial.println(mask, HEX);
-  Serial.print("intr = ");
+  Serial.print("_loraModem::stateMachine:: flags = 0x");
+  Serial.print(flags, HEX);
+  Serial.print(", mask = 0x");
+  Serial.print(mask, HEX);
+  Serial.print(", intr = 0x");
   Serial.println(intr, HEX);
 #endif
 	if (intr == 0x00) {
 #if DUSB>=1
 		// Something strange has happened: There has been an event
 		// and we do not have a value for interrupt.
-		//if (debug>=1) Serial.println(F("stateMachine:: NO intr"));
     printTime();
-    //Serial.println(F("stateMachine:: NO intr"));
-    Serial.println(F("stateMachine:: event with unknown interrupt request!"));
+    Serial.println(F("_loraModem::stateMachine:: event with unknown interrupt request!"));
 #endif
 
 		// Mayby wait a little before resetting all/
@@ -1053,6 +1031,9 @@ void stateMachine()
 		ReleaseMutex(&inIntr);
 #endif		
 		//_state = S_SCAN;
+#if DUSB>=1
+    Serial.println("_loraModem::stateMachine:: Clear ALL interrupts");
+#endif
 		writeRegister(REG_IRQ_FLAGS, 0xFF );		// Clear ALL interrupts
 		_event = 0;
 		return;
@@ -1061,8 +1042,7 @@ void stateMachine()
 	// Small state machine inside the interrupt handler
 	// as next actions are depending on the state we are in.
 #if DUSB>=1
-  Serial.print("_state = ");
-  Serial.println(_state, DEC);
+  Serial.print("_state = "); Serial.println(_state, DEC);
 #endif
 	switch (_state) 
 	{
@@ -1072,12 +1052,13 @@ void stateMachine()
 	  // The initLoraModem() function is already called ini setup();
 	  case S_INIT:
 #if DUSB>=2
-		//if (debug >= 1) { 
 			printTime();
-			Serial.println(F("S_INIT")); 
-		//}
+			Serial.println(F("_loraModem::stateMachine:: case == S_INIT")); 
 #endif
 		// new state, needed to startup the radio (to S_SCAN)
+#if DUSB>=1
+    Serial.println("_loraModem::stateMachine:: Clear ALL interrupts");
+#endif
 		writeRegister(REG_IRQ_FLAGS, 0xFF );		// Clear ALL interrupts
 	  break;
 
@@ -1094,10 +1075,8 @@ void stateMachine()
 		//
 		if (intr & IRQ_LORA_CDDETD_MASK) {
 #if DUSB>=2
-			//if (debug >=3) { // paulo
 				printTime();
-				Serial.println(F("SCAN:: CADDETD, "));
-			//}
+				Serial.println(F("_loraModem::stateMachine:: case == S_SCAN :: intr == IRQ_LORA_CDDETD "));
 #endif
 
 			_state = S_RX;								// Set state to receiving
@@ -1146,6 +1125,10 @@ void stateMachine()
 		
 		// If not CDDETC and not CDDONE and sf==12 we have to hop
 		else if ((_hop) && (sf==12)) {
+#if DUSB>=2
+      printTime();
+     Serial.println("_loraModem::stateMachine:: calling hop()");
+#endif
 				hop();
 				sf=(sf_t)7;
 		}
@@ -1245,14 +1228,9 @@ void stateMachine()
 		// is unknown in this state. So we clear interrupt and give a warning.
 		else {
 #if DUSB>=2
-			//if (debug>=1) { 
-				printTime();
-				Serial.println(F("CAD:: Unknown interrupt")); 
-			//}
-#endif
-#if DUSB>=2
-    printTime();
-     Serial.println("Changing to state S_SCAN");
+      printTime();
+      Serial.println(F("CAD:: Unknown interrupt")); 
+      Serial.println("Changing to state S_SCAN");
 #endif
 			_state = S_SCAN;
 			cadScanner();
@@ -1276,14 +1254,13 @@ void stateMachine()
 			if (intr & IRQ_LORA_CRCERR_MASK) {
 #if DUSB>=2
       printTime();
-			Serial.println(F("CRC err"));
-			//	if (debug>=2) Serial.flush();
+			Serial.println(F("_loraModem::stateMachine::CRC err"));
      Serial.flush();
 #endif
 				if (_cad) {
 #if DUSB>=2
     printTime();
-     Serial.println("Changing to state S_SCAN");
+     Serial.println("_loraModem::stateMachine::Changing to state S_SCAN");
 #endif
 					_state = S_SCAN;
 					cadScanner();
@@ -1291,7 +1268,7 @@ void stateMachine()
 				else {
 #if DUSB>=2
     printTime();
-     Serial.println("Changing to state S_RX");
+     Serial.println("_loraModem::stateMachine::Changing to state S_RX");
 #endif
 					_state = S_RX;
 					rxLoraModem();
@@ -1305,10 +1282,8 @@ void stateMachine()
 
 			if((LoraUp.payLength = receivePkt(LoraUp.payLoad)) <= 0) {
 #if DUSB>=1
-				//if (debug>=0) {
-       printTime();
-				  Serial.println(F("sMachine:: Error S-RX"));
-				//}
+        printTime();
+        Serial.println(F("_loraModem::stateMachine::Error S-RX"));
 #endif
 			}
 				
@@ -1342,10 +1317,8 @@ void stateMachine()
 #endif
 			}
 #if DUSB>=2
-			//else if (debug>=2) {
       printTime();
 				Serial.println(F("sMach:: receivePacket OK"));
-			//}
 #endif
 			
 			// Set the modem to receiving BEFORE going back to
@@ -1402,10 +1375,8 @@ void stateMachine()
 		// therefore we restart the scanning sequence (catch all)
 		else {
 #if DUSB>=2
-			//if (debug >=3) {
       printTime();
 				Serial.println(F("S_RX:: No RXDONE/RXTOUT, "));
-			//}
 #endif
 			initLoraModem();							// Reset all communication,3
 			if (_cad) {
@@ -1450,10 +1421,8 @@ void stateMachine()
 		);
 		
 #if DUSB>=2
-		//if (debug>=0) { // paulo
 			printTime();
-			Serial.println(F("S_TX, "));
-		//}
+			Serial.println(F("case == S_TX, "));
 #endif
 #if DUSB>=2
     printTime();
@@ -1505,21 +1474,15 @@ void stateMachine()
 			writeRegister(REG_IRQ_FLAGS, (uint8_t) 0xFF);				// reset interrupt flags
 #if DUSB>=1
       printTime();
-			// if (debug>=1) { // paulo
 				Serial.println(F("TXDONE handled"));
-				// if (debug>=2) Serial.flush(); // paulo
-       Serial.flush(); // incluido paulo
-			//}
+       Serial.flush();
 #endif
 		}
 		else {
 #if DUSB>=2 // era 1 paulo
       printTime();
-			//if (debug>=0) {  // paulo
 				Serial.println(F("TXDONE unknown interrupt"));
-				//if (debug>=2) Serial.flush(); // paulo
         Serial.flush(); // incluido paulo
-			//}
 #endif
 		}
 	  break; // S_TXDONE	  
@@ -1532,10 +1495,8 @@ void stateMachine()
 	  default:
 #if DUSB>=2
     printTime();
-		//if (debug >= 2) {  // paulo
 			Serial.print("E state="); 
 			Serial.println(_state);	
-		//}
 #endif
 		if (_cad) {
 #if DUSB>=2

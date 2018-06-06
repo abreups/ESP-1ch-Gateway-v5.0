@@ -716,8 +716,8 @@ int readUdp(int packetSize)
 	
 		case PKT_PULL_DATA:	// 0x02 UP
 #if DUSB>=1
-			Serial.print(F(" Pull Data"));
-			Serial.println();
+      printTime();
+			Serial.print(F("ESP-sc-gway::readUdp:: Pull Data"));
 #endif
 		break;
 	
@@ -725,7 +725,8 @@ int readUdp(int packetSize)
 		// XXX This message format may also be used for other downstream communucation
 		case PKT_PULL_RESP:	// 0x03 DOWN
 #if DUSB>=1
-			Serial.println(F("PKT_PULL_RESP:: received"));
+      printTime();
+			Serial.println(F("ESP-sc-gway::readUdp:: PKT_PULL_RESP received"));
 #endif
 			lastTmst = micros();					// Store the tmst this package was received
 			
@@ -751,7 +752,8 @@ int readUdp(int packetSize)
 			buff[11]=MAC_array[5];
 			buff[12]=0;
 #if DUSB>=1
-			Serial.println(F("readUdp:: TX buff filled"));
+      printTime();
+			Serial.println(F("ESP-sc-gway::readUdp:: TX buff filled"));
 #endif
 			// Only send the PKT_PULL_ACK to the UDP socket that just sent the data!!!
 			Udp.beginPacket(remoteIpNo, remotePortNo);
@@ -761,27 +763,29 @@ int readUdp(int packetSize)
       if (Udp.write((char *)buff, 12) != 12) {
 #endif
 #if DUSB>=1
-				//if (debug>=0)
-					Serial.println("PKT_PULL_ACK:: Error UDP write");
+          printTime();
+					Serial.println("ESP-sc-gway::readUdp::PKT_PULL_ACK Error UDP write");
 #endif
 			}
 			else {
 #if DUSB>=1
-				Serial.print(F("PKT_TX_ACK:: tmst="));
+        printTime();
+				Serial.print(F("ESP-sc-gway::readUdp::PKT_TX_ACK tmst="));
 				Serial.println(micros());
 #endif
 			}
 
 			if (!Udp.endPacket()) {
 #if DUSB>=1
-				//if (debug>=0)
-					Serial.println(F("PKT_PULL_DATALL Error Udp.endpaket"));
+          printTime();
+					Serial.println(F("ESP-sc-gway::readUdp::PKT_PULL_DATALL Error Udp.endpaket"));
 #endif
 			}
 			
 			yield();
 #if DUSB>=1
-			Serial.print(F("PKT_PULL_RESP:: size ")); 
+      printTime();
+			Serial.print(F("ESP-sc-gway::readUdp::PKT_PULL_RESP size ")); 
 			Serial.print(packetSize);
 			Serial.print(F(" From ")); 
 			Serial.print(remoteIpNo);
@@ -797,7 +801,8 @@ int readUdp(int packetSize)
 	
 		case PKT_PULL_ACK:	// 0x04 DOWN; the server sends a PULL_ACK to confirm PULL_DATA receipt
 #if DUSB>=1
-			Serial.print(F("PKT_PULL_ACK:: size ")); Serial.print(packetSize);
+      printTime();
+			Serial.print(F("ESP-sc-gway::readUdp::PKT_PULL_ACK size ")); Serial.print(packetSize);
 			Serial.print(F(" From ")); Serial.print(remoteIpNo);
 			Serial.print(F(", port ")); Serial.print(remotePortNo);	
 			Serial.print(F(", data: "));
@@ -817,13 +822,15 @@ int readUdp(int packetSize)
 
 #endif
 #if DUSB>=1
-			Serial.print(F(", ERROR ident not recognized="));
+      printTime();
+			Serial.print(F("ESP-sc-gway::readUdp ERROR ident not recognized="));
 			Serial.println(ident);
 #endif
 		break;
 		}
 #if DUSB>=2
-		Serial.print(F("readUdp:: returning=")); 
+    printTime();
+		Serial.print(F("ESP-sc-gway::readUdp returning=")); 
 		Serial.println(packetSize);
 #endif
 		// For downstream messages
@@ -850,7 +857,8 @@ int sendUdp(IPAddress server, int port, uint8_t *msg, int length) {
 	// Check whether we are conected to Wifi and the internet
 	if (WlanConnect(3) < 0) {
 #if DUSB>=1
-		Serial.print(F("sendUdp: ERROR connecting to WiFi"));
+    printTime();
+		Serial.println(F("ESP-sc-gway::sendUdp:: ERROR connecting to WiFi"));
 		Serial.flush();
 #endif
 		Udp.flush();
@@ -862,11 +870,12 @@ int sendUdp(IPAddress server, int port, uint8_t *msg, int length) {
 
 	//send the update
 #if DUSB>=1
-	Serial.println(F("WiFi connected"));
+	Serial.println(F("ESP-sc-gway::sendUdp::WiFi connected"));
 #endif	
 	if (!Udp.beginPacket(server, (int) port)) {
 #if DUSB>=1
-		Serial.println(F("sendUdp:: Error Udp.beginPacket"));
+    printTime();
+		Serial.println(F("ESP-sc-gway::sendUdp:: Error Udp.beginPacket"));
 #endif
 		return(0);
 	}
@@ -879,7 +888,8 @@ int sendUdp(IPAddress server, int port, uint8_t *msg, int length) {
   if (Udp.write((char *)msg, length) != length) {
 #endif
 #if DUSB>=1
-		Serial.println(F("sendUdp:: Error write"));
+    printTime();
+		Serial.println(F("ESP-sc-gway::sendUdp:: Error write"));
 #endif
 		Udp.endPacket();						// Close UDP
 		return(0);								// Return error
@@ -889,7 +899,8 @@ int sendUdp(IPAddress server, int port, uint8_t *msg, int length) {
 	
 	if (!Udp.endPacket()) {
 #if DUSB>=1
-		Serial.println(F("sendUdp:: Error Udp.endPacket"));
+    printTime();
+		Serial.println(F("ESP-sc-gway::sendUdp:: Error Udp.endPacket"));
 		Serial.flush();
 #endif
 		return(0);
@@ -910,18 +921,21 @@ bool UDPconnect() {
 	bool ret = false;
 	unsigned int localPort = _LOCUDPPORT;			// To listen to return messages from WiFi
 #if DUSB>=1
-	Serial.print(F("Local UDP port="));
+  printTime();
+	Serial.print(F("ESP-sc-gway::UDPconnect::Local UDP port="));
 	Serial.println(localPort);
 #endif	
 	if (Udp.begin(localPort) == 1) {
 #if DUSB>=1
-		Serial.println(F("Connection successful"));
+    printTime();
+		Serial.println(F("ESP-sc-gway::UDPconnect:: Connection successful"));
 #endif
 		ret = true;
 	}
 	else{
 #if DUSB>=1
-		Serial.println("Connection failed");
+    printTime();
+		Serial.println("ESP-sc-gway::UDPconnect:: Connection failed");
 #endif
 	}
 	return(ret);
@@ -975,7 +989,8 @@ void pullData() {
 
 #if DUSB>=1
 	if (pullPtr != pullDataReq) {
-		Serial.println(F("pullPtr != pullDatReq"));
+		printTime();
+		Serial.println(F("ESP-sc-gway::pullData:: pullPtr != pullDatReq"));
 		Serial.flush();
 	}
 
@@ -994,7 +1009,6 @@ void pullData() {
 		Serial.print(':');
 	}
 	Serial.println();
-	if (debug>=2) Serial.flush();
 #endif
 	return;
 } // end of pullData()
