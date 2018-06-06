@@ -113,13 +113,33 @@ struct pins {
 // Line above defines DI00 == d i zero zero!
 // But neither DI00 (zero zero) nor DIO0 (letter O and zero) seem to be used anywhere in the code.
 } pins;
+#elif _PIN_OUT==4
+// For ComResult gateway PCB use the following settings
+struct pins {
+  uint8_t dio0=26;   // GPIO5 / D1. Dio0 used for one frequency and one SF - OK. same as DIO0 below
+  uint8_t dio1=26;   // GPIO4 / D2. Used for CAD, may or not be shared with DIO0 - ??? not LoRa in ESP32 --> FIXED
+  uint8_t dio2=26;   // GPIO0 / D3. Used for frequency hopping, don't care -  ??? not LoRa in ESP32 --> FIXED
+  uint8_t ss=18;    // GPIO15 / D8. Select pin connected to GPIO15 - OK. same as DIO0 below
+  uint8_t rst=14;    // GPIO0 / D3. Reset pin not used - OK. same as DIO0 below
+// Pin defenition of WIFI LoRa 32
+// HelTec AutoMation 2017 support@heltec.cn 
+// Pinout: http://www.heltec.cn/download/WIFI_LoRa_32_Diagram.pdf
+#define SCK     5    // GPIO5  -- SX127x's SCK    (LoRa_SCK)
+#define MISO    19   // GPIO19 -- SX127x's MISO   (LoRa_MISO)
+#define MOSI    27   // GPIO27 -- SX127x's MOSI   (LoRa_MOSI)
+#define SS      18   // GPIO18 -- SX127x's CS     (LoRa_CS)
+#define RST     14   // GPIO14 -- SX127x's RESET  (LoRa_RST)
+#define DI00    26   // GPIO26 -- SX127x's IRQ    (LoRa_IRQ)
+// Line above defines DI00 == d i zero zero!
+// But neither DI00 (zero zero) nor DIO0 (letter O and zero) seem to be used anywhere in the code.
+} pins;
 #else
 	// Use your own pin definitions, and uncomment #error line below
 	// MISO 12 / D6
 	// MOSI 13 / D7
 	// CLK  14 / D5
 	// SS   16 / D0
-#error "Pin Definitions _PIN_OUT must be 1(HALLARD) or 2 (COMRESULT)"
+#error "Pin Definitions _PIN_OUT must be 1(HALLARD), 2 (COMRESULT), 3 or 4 (Heltec WiFi LoRa 32)"
 #endif
 
 // STATR contains the statictis that are kept by message. 
