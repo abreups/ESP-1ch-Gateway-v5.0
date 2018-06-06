@@ -92,9 +92,10 @@
 // If your pin definitions are different, update the loraModem.h file to reflect these settings.
 //	1: HALLARD
 //	2: COMRESULT pin out
-//	3: For Heltec ESP32 based WIFI_LoRa_32 board
-//  4: Other, define your own in loraModem.h
-#define _PIN_OUT 3  // ---> ESP32
+//	3: For Heltec ESP32 based WIFI_LoRa_32 board  --> not true??
+//  4: Heltec "WiFi LoRa 32" - Pinout: http://www.heltec.cn/download/WIFI_LoRa_32_Diagram.pdf
+//  5: Other, define your own in loraModem.h
+#define _PIN_OUT 4  // ---> ESP32
 
 // Gather statistics on sensor and Wifi status
 // 0= No statistics

@@ -992,19 +992,19 @@ void initLoraModem()
 //	The eventHandler should take care of repairing flags between interrupts.
 // ----------------------------------------------------------------------------
 
-void stateMachine()
-{
-	// Make a sort of mutex by using a volatile variable
+void stateMachine() {
+    // Make a sort of mutex by using a volatile variable
 #if MUTEX_INT==1	
-	if(!GetMutex(&inIntr)) {
+    if(!GetMutex(&inIntr)) {
 #if DUSB>=1
-    printTime();
-    Serial.println(F("_loraModem::stateMachine::eInt Mutex (sei lá o que é isso)"));
-    Serial.flush();
+        printTime();
+        Serial.println(F("_loraModem::stateMachine::eInt Mutex (sei lá o que é isso)"));
+        Serial.flush();
 #endif
-		return;
-	}
+        return;
+    }
 #endif
+
 	// Determine what interrupt flags are set
 	uint8_t flags = readRegister(REG_IRQ_FLAGS);
 	uint8_t mask  = readRegister(REG_IRQ_FLAGS_MASK);

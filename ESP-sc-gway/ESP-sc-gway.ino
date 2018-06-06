@@ -1052,7 +1052,7 @@ void sendstat() {
     t = now();												// get timestamp for statistics
 	
 	// XXX Using CET as the current timezone. Change to your timezone	
-	sprintf(stat_timestamp, "%04d-%02d-%02d %02d:%02d:%02d CET", year(),month(),day(),hour(),minute(),second());
+	sprintf(stat_timestamp, "%04d-%02d-%02d %02d:%02d:%02d", year(),month(),day(),hour(),minute(),second());
 	yield();
 	
 	ftoa(lat,clat,5);										// Convert lat to char array with 5 decimals
@@ -1354,124 +1354,120 @@ void setup() {
 //
 // NOTE2: For ESP make sure not to do large array declarations in loop();
 // ----------------------------------------------------------------------------
-void loop ()
-{
-	uint32_t nowSeconds;
-	int packetSize;
+void loop () {
+    uint32_t nowSeconds;
+    int packetSize;
+
+    nowTime = micros();
+    nowSeconds = (uint32_t) millis() /1000;
 	
-	nowTime = micros();
-	nowSeconds = (uint32_t) millis() /1000;
-	
-	// check for event value, which means that an interrupt has arrived.
-	// In this case we handle the interrupt ( e.g. message received)
-	// in userspace in loop().
-	//
-	if (_event != 0x00) {
+    // check for event value, which means that an interrupt has arrived.
+    // In this case we handle the interrupt ( e.g. message received)
+    // in userspace in loop().
+    if (_event != 0x00) {
 #if DUSB>=2
-		printTime();
-    		Serial.print("Event = ");
-    		Serial.println(_event);
-		Serial.println("ESP-sc-gway::loop::calling stateMachine()");
+        printTime();
+        Serial.print("Event = 0x"); Serial.println(_event, HEX);
+        Serial.println("ESP-sc-gway::loop::calling stateMachine()");
 #endif
-		stateMachine();					// start the state machine
-		_event = 0;						// reset value
-		return;							// Restart loop
-	}
+        stateMachine();					// start the state machine
+        _event = 0;						// reset value
+        return;							// Restart loop
+    }
 	
-	// After a quiet period, make sure we reinit the modem.
-	// XXX Still have to measure quiet period in stat[0];
-	// For the moment we use msgTime
-	if ( (((nowTime - statr[0].tmst) / 1000000) > _MSG_INTERVAL ) &&
-		(msgTime < statr[0].tmst)) {
+    // After a quiet period, make sure we reinit the modem.
+    // XXX Still have to measure quiet period in stat[0];
+    // For the moment we use msgTime
+    if ( (((nowTime - statr[0].tmst) / 1000000) > _MSG_INTERVAL ) &&
+        (msgTime < statr[0].tmst)) {
 #if DUSB>=1
-		Serial.print("ESP-sc-gway::loop::reinitiating lora modem");
+        printTime();
+        Serial.print("ESP-sc-gway::loop::reinitiating lora modem");
 #endif
-		initLoraModem();
-		if (_cad) {
-			_state = S_SCAN;
-			cadScanner();
-		}
-		else {
-			_state = S_RX;
-			rxLoraModem();
-		}
+        initLoraModem();
+        if (_cad) {
+                _state = S_SCAN;
+                cadScanner();
+        } else {
+                _state = S_RX;
+                rxLoraModem();
+        }
 #if DUSB>=2
-   		Serial.print("ESP-sc-gway::loop::reseting interrupts");
+        Serial.print("ESP-sc-gway::loop::reseting interrupts");
 #endif
-		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
-		writeRegister(REG_IRQ_FLAGS, 0xFF);				// Reset all interrupt flags
-		msgTime = nowTime;
-	}
+        writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
+        writeRegister(REG_IRQ_FLAGS, 0xFF);				// Reset all interrupt flags
+        msgTime = nowTime;
+    }
 	
 #if A_OTA==1
-	// Perform Over the Air (OTA) update if enabled and requested by user.
-	// It is important to put this function at the start of loop() as it is
-	// not called frequently but it should always run when called.
-	//
-	yield();
+    // Perform Over the Air (OTA) update if enabled and requested by user.
+    // It is important to put this function at the start of loop() as it is
+    // not called frequently but it should always run when called.
+    yield();
 #if DUSB>=2
-    	printTime();
-    	Serial.println("ESP-sc-gway::loop::Perform OTA update");
+    printTime();
+    Serial.println("ESP-sc-gway::loop::Perform OTA update");
 #endif
-	ArduinoOTA.handle();
+    ArduinoOTA.handle();
 #endif
 
 #if A_SERVER==1
-	// Handle the WiFi server part of this sketch. Mainly used for administration 
-	// and monitoring of the node. This function is important so it is called at the
-	// start of the loop() function
-	yield();
-
-// Debug disabled because it is called too much, all the time
-#if DUSB>=5
-    	printTime();
-    	Serial.println("ESP-sc-gway::loop::handle WiFi");
+    // Handle the WiFi server part of this sketch. Mainly used for administration 
+    // and monitoring of the node. This function is important so it is called at the
+    // start of the loop() function
+    yield();
+#if DUSB>=5 // Debug disabled because it is called too much, all the time
+    printTime();
+    Serial.println("ESP-sc-gway::loop::handle WiFi");
 #endif
-	server.handleClient();	
+    server.handleClient();	
 #endif
 
-	// If we are not connected, try to connect.
-	// We will not read Udp in this loop cycle then
-	if (WlanConnect(1) < 0) {
-#if DUSB>=2
-    		printTime();
-    		Serial.print("ESP-sc-gway::loop::WlanConnect");
-#endif
-		Serial.print(F("loop: ERROR reconnect WLAN"));
-		yield();
-		return;										// Exit loop if no WLAN connected
-	} // could not connect wifi
-	
-	// So if we are connected 
-	// Receive UDP PUSH_ACK messages from server. (*2, par. 3.3)
-	// This is important since the TTN broker will return confirmation
-	// messages on UDP for every message sent by the gateway. So we have to consume them..
-	// As we do not know when the server will respond, we test in every loop.
-	//
-	else {
-		while( (packetSize = Udp.parsePacket()) > 0) {		// Length of UDP message waiting
-#if DUSB>=2
-      			printTime();
-      			Serial.println(F("ESP-sc-gway::loop:: Wi-Fi connected"));
-      			printTime();
-			Serial.println(F("ESP-sc-gway::loop:: readUdp calling"));
-#endif
-			// Packet may be PKT_PUSH_ACK (0x01), PKT_PULL_ACK (0x03) or PKT_PULL_RESP (0x04)
-			// This command is found in byte 4 (buffer[3])
-			if (readUdp(packetSize) <= 0) {
+	  // If we are not connected, try to connect.
+	  // We will not read Udp in this loop cycle then
+    if (WlanConnect(1) < 0) {
 #if DUSB>=1
-        			printTime();
-        			Serial.println(F("ESP-sc-gway::readUDP error"));
+        printTime();
+        Serial.println("ESP-sc-gway::loop::WlanConnect failed");
 #endif
-				break;
-			}
-			// Now we know we succesfull received message from host
-			else {
-				_event=1;									// Could be done double if more messages received
-			}
-			//yield();
-		}
-	}
+        yield();
+        return;										// Exit loop if no WLAN connected
+    } // could not connect wifi
+	
+    // So if we are connected 
+    // Receive UDP PUSH_ACK messages from server. (*2, par. 3.3)
+    // This is important since the TTN broker will return confirmation
+    // messages on UDP for every message sent by the gateway. So we have to consume them.
+    // As we do not know when the server will respond, we test in every loop.
+    //
+    else { // connection to WiFi OK
+#if DUSB>=5
+        printTime();
+        Serial.println(F("ESP-sc-gway::loop::WlanConnect success"));
+#endif
+        while( (packetSize = Udp.parsePacket()) > 0) {		// Length of UDP message waiting
+#if DUSB>=2
+            printTime();
+            Serial.println(F("ESP-sc-gway::loop::reading Udp packet"));
+#endif
+            // Packet may be PKT_PUSH_ACK (0x01), PKT_PULL_ACK (0x03) or PKT_PULL_RESP (0x04)
+            // This command is found in byte 4 (buffer[3])
+            if (readUdp(packetSize) <= 0) {
+#if DUSB>=1
+                printTime();
+                Serial.println(F("ESP-sc-gway::readUDP::error reading UDP packet"));
+#endif
+                break;
+            } else { // Now we know we succesfull received message from host
+#if DUS>=2
+                printTime();
+                Serial.println(F("ESP-sc-gway::readUDP::error reading UDP packet"));
+#endif
+                _event=1;									// Could be done double if more messages received
+            }
+        } // end of while( (packetSize = Udp.parsePacket()) > 0)
+    } // end of 'connection to WiFi OK
 	
 	yield();
 	

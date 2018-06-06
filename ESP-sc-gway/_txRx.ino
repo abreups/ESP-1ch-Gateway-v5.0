@@ -282,19 +282,13 @@ int buildPacket(uint32_t tmst, uint8_t *buff_up, struct LoraUp LoraUp, bool inte
 #endif	
 #endif
 
-#if DUSB>=1	
-	//if (debug>=1) {  // paulo
+#if DUSB>=2
 		printTime();
 		Serial.println("_txRx::buildPacket");
-		Serial.print(F("pRSSI: "));
-		Serial.print(prssi-rssicorr);
-		Serial.print(F(" RSSI: "));
-		Serial.print(_rssi - rssicorr);
-		Serial.print(F(" SNR: "));
-		Serial.print(SNR);
-		Serial.print(F(" Length: "));
-		Serial.print((int)messageLength);
-		Serial.print(F(" -> "));
+		Serial.print(F("    pRSSI: ")); Serial.println(prssi-rssicorr);
+		Serial.print(F("    RSSI: ")); Serial.println(_rssi - rssicorr);
+		Serial.print(F("    SNR: ")); Serial.println(SNR);
+		Serial.print(F("    Length: ")); Serial.print((int)messageLength); Serial.print(F(" -> "));
 		int i;
 		for (i=0; i< messageLength; i++) {
 					Serial.print(message[i],HEX);
@@ -302,7 +296,6 @@ int buildPacket(uint32_t tmst, uint8_t *buff_up, struct LoraUp LoraUp, bool inte
 		}
 		Serial.println();
 		yield();
-	//}
 #endif
 
 // Show received message status on OLED display
