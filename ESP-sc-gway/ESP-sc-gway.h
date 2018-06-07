@@ -92,10 +92,11 @@
 // If your pin definitions are different, update the loraModem.h file to reflect these settings.
 //	1: HALLARD
 //	2: COMRESULT pin out
-//	3: For Heltec ESP32 based WIFI_LoRa_32 board  Pinout: http://www.heltec.cn/download/WIFI_LoRa_32_Diagram.pdf
-//  4: corrigir
-//  5: Other, define your own in loraModem.h
-#define _PIN_OUT 3  // ---> ESP32
+//	3: For Heltec ESP32 based WIFI_LoRa_32 board  
+//		Pinout: http://www.heltec.cn/download/WIFI_LoRa_32_Diagram.pdf
+//		Note that dio1 and dio2 are not shown on the diagram above, although they do seem to work.
+//  	4: Other, define your own in loraModem.h
+#define _PIN_OUT 3
 
 // Gather statistics on sensor and Wifi status
 // 0= No statistics
@@ -174,19 +175,19 @@
 #define CONFIGFILE "/gwayConfig.txt"
 
 // Set the Server Settings (IMPORTANT)
-#define _LOCUDPPORT 1700					// UDP port of gateway! Often 1700 or 1701 is used for upstream comms
+#define _LOCUDPPORT 1700			// UDP port of gateway! Often 1700 or 1701 is used for upstream comms
 
 // Timing
 #define _MSG_INTERVAL 15
-#define _PULL_INTERVAL 55					// PULL_DATA messages to server to get downstream in milliseconds
-#define _STAT_INTERVAL 120					// Send a 'stat' message to server
-#define _NTP_INTERVAL 3600					// How often do we want time NTP synchronization
-#define _WWW_INTERVAL	60					// Number of seconds before we refresh the WWW page
+#define _PULL_INTERVAL 55			// PULL_DATA messages to server to get downstream in milliseconds
+#define _STAT_INTERVAL 120			// Send a 'stat' message to server
+#define _NTP_INTERVAL 3600			// How often do we want time NTP synchronization
+#define _WWW_INTERVAL	60			// Number of seconds before we refresh the WWW page
 
 // MQTT definitions, these settings should be standard for TTN
 // and need not changing
-#define _TTNPORT 1700						    // Standard port for TTN
-#define _TTNSERVER "18.228.39.211"  // servidor loraserver do Evaldo
+#define _TTNPORT 1700			// Standard port for TTN
+#define _TTNSERVER "18.228.39.211"	// servidor loraserver do Evaldo
 
 // If you have a second back-end server defined such as Semtech or loriot.io
 // your can define _THINGPORT and _THINGSERVER with your own value.
@@ -207,9 +208,9 @@
 
 // ntp
 #define NTP_TIMESERVER "a.st1.ntp.br"	// Country and region specific
-#define NTP_TIMEZONES	-3					// How far is our Timezone from UTC (excl daylight saving/summer time)
+#define NTP_TIMEZONES	-3		// How far is our Timezone from UTC (excl daylight saving/summer time)
 //#define SECS_PER_HOUR	3600  // this is already defined in TimeLib.h
-#define NTP_INTR 0							// Do NTP processing with interrupts or in loop();
+#define NTP_INTR 0			// Do NTP processing with interrupts or in loop();
 
 #if GATEWAYNODE==1
 #define _DEVADDR { 0x26, 0x00, 0x00 0x00 }
@@ -219,7 +220,7 @@
 #endif
 
 // Define the correct radio type that you are using
-#define CFG_sx1276_radio		
+#define CFG_sx1276_radio	// --> used by Heltec WiFi LoRa 32 board
 //#define CFG_sx1272_radio
 
 // Serial Port speed
@@ -251,7 +252,7 @@ struct wpas {
 // --------------  put the content of these following 5 lines in a file and set the path + file name below --------
 wpas wpa[] = {
 	{ "" , "" },							          // Reserved for WiFi Manager
-  { "your ssid", "your wifi password" },
+	{ "your ssid", "your wifi password" },
 	{ "" , "" }                         // Reserved for WiFi Manager
 };
 // --------------  put the content of these above 5 lines in a file and set the path + file name below --------
