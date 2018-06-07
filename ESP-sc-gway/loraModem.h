@@ -84,6 +84,7 @@ struct pins {
 	// MOSI 13 / D7
 	// CLK  14 / D5
 } pins;
+
 #elif _PIN_OUT==2
 // For ComResult gateway PCB use the following settings
 struct pins {
@@ -93,6 +94,7 @@ struct pins {
 	uint8_t ss=15;		// GPIO15 / D8. Select pin connected to GPIO15
 	uint8_t rst=0;		// GPIO0 / D3. Reset pin not used	
 } pins;
+
 #elif _PIN_OUT==3
 // For ComResult gateway PCB use the following settings
 struct pins {
@@ -113,6 +115,7 @@ struct pins {
 // Line above defines DI00 == d i zero zero!
 // But neither DI00 (zero zero) nor DIO0 (letter O and zero) seem to be used anywhere in the code.
 } pins;
+
 #elif _PIN_OUT==4
 // For ComResult gateway PCB use the following settings
 struct pins {
@@ -133,6 +136,7 @@ struct pins {
 // Line above defines DI00 == d i zero zero!
 // But neither DI00 (zero zero) nor DIO0 (letter O and zero) seem to be used anywhere in the code.
 } pins;
+
 #else
 	// Use your own pin definitions, and uncomment #error line below
 	// MISO 12 / D6
@@ -173,10 +177,10 @@ struct stat_c {
 	unsigned long sf10;						// Spreading factor 10
 	unsigned long sf11;						// Spreading factor 11
 	unsigned long sf12;						// Spreading factor 12
-	
 	uint16_t boots;							// Number of boots
 	uint16_t resets;
 } stat_c;
+
 struct stat_c statc;
 #endif
 #else // STATISTICS==0
@@ -197,9 +201,8 @@ struct LoraBuffer {
 	uint8_t iiq;
 } LoraDown;
 
-// Up buffer (from Lora to UDP)
-//
 
+// Up buffer (from Lora to UDP)
 struct LoraUp {
 	uint8_t payLoad[128];
 	uint8_t payLength;
@@ -208,9 +211,6 @@ struct LoraUp {
 	int rssicorr;
 	uint8_t sf;
 } LoraUp;
-
-
-
 
 // ----------------------------------------
 // Used by REG_PAYLOAD_LENGTH to set receive payload length
@@ -235,71 +235,84 @@ struct LoraUp {
 // Register definitions. These are the addresses of the TFM95, SX1276 that we 
 // need to set in the program.
 
-#define REG_FIFO			0x00
-#define REG_OPMODE			0x01
+#define REG_FIFO              0x00
+#define REG_OPMODE            0x01
 // Register 2 to 5 are unused for LoRa
-#define REG_FRF_MSB			0x06
-#define REG_FRF_MID			0x07
-#define REG_FRF_LSB			0x08
-#define REG_PAC				0x09
-#define REG_PARAMP			0x0A
-#define REG_LNA				0x0C
-#define REG_FIFO_ADDR_PTR		0x0D
+#define REG_FRF_MSB           0x06
+#define REG_FRF_MID           0x07
+#define REG_FRF_LSB           0x08
+#define REG_PAC               0x09
+#define REG_PARAMP            0x0A
+#define REG_LNA               0x0C
+#define REG_FIFO_ADDR_PTR     0x0D
 #define REG_FIFO_TX_BASE_AD		0x0E
 #define REG_FIFO_RX_BASE_AD		0x0F
 
-#define REG_FIFO_RX_CURRENT_ADDR	0x10
-#define REG_IRQ_FLAGS_MASK		0x11
-#define REG_IRQ_FLAGS			0x12
-#define REG_RX_NB_BYTES			0x13
-#define REG_PKT_SNR_VALUE		0x19
-#define REG_PKT_RSSI			0x1A	// latest package
-#define REG_RSSI			0x1B	// Current RSSI, section 6.4, or  5.5.5
-#define REG_HOP_CHANNEL			0x1C
-#define REG_MODEM_CONFIG1		0x1D
-#define REG_MODEM_CONFIG2		0x1E
-#define REG_SYMB_TIMEOUT_LSB		0x1F
+#define REG_FIFO_RX_CURRENT_ADDR  0x10
+#define REG_IRQ_FLAGS_MASK        0x11
+#define REG_IRQ_FLAGS             0x12
+#define REG_RX_NB_BYTES           0x13
+#define REG_PKT_SNR_VALUE         0x19
+#define REG_PKT_RSSI              0x1A	// latest package
+#define REG_RSSI                  0x1B	// Current RSSI, section 6.4, or  5.5.5
+#define REG_HOP_CHANNEL           0x1C
+#define REG_MODEM_CONFIG1         0x1D
+#define REG_MODEM_CONFIG2         0x1E
+#define REG_SYMB_TIMEOUT_LSB      0x1F
 
-#define REG_PAYLOAD_LENGTH		0x22
+#define REG_PAYLOAD_LENGTH        0x22
 #define REG_MAX_PAYLOAD_LENGTH		0x23
-#define REG_HOP_PERIOD			0x24
-#define REG_MODEM_CONFIG3		0x26
-#define REG_RSSI_WIDEBAND		0x2C
+#define REG_HOP_PERIOD            0x24
+#define REG_MODEM_CONFIG3         0x26
+#define REG_RSSI_WIDEBAND         0x2C
 
 #define REG_INVERTIQ			0x33
 #define REG_DET_TRESH			0x37	// SF6
 #define REG_SYNC_WORD			0x39
-#define REG_TEMP			0x3C
+#define REG_TEMP			    0x3C
 
 #define REG_DIO_MAPPING_1		0x40
 #define REG_DIO_MAPPING_2		0x41
-#define REG_VERSION			0x42
+#define REG_VERSION			    0x42
 
-#define REG_PADAC			0x5A
+#define REG_PADAC			      0x5A
 #define REG_PADAC_SX1272		0x5A
 #define REG_PADAC_SX1276		0x4D
 
 
 // ----------------------------------------
 // opModes
-#define SX72_MODE_SLEEP			0x80
-#define SX72_MODE_STANDBY		0x81
-#define SX72_MODE_FSTX			0x82
-#define SX72_MODE_TX			0x83	// 0x80 | 0x03
-#define SX72_MODE_RX_CONTINUOS		0x85
+#define SX72_MODE_SLEEP			    0x80
+#define SX72_MODE_STANDBY		    0x81
+#define SX72_MODE_FSTX			    0x82
+#define SX72_MODE_TX			      0x83	// 0x80 | 0x03
+#define SX72_MODE_RX_CONTINUOS  0x85
 
 // ----------------------------------------
 // LMIC Constants for radio registers
-#define OPMODE_LORA			0x80
-#define OPMODE_MASK			0x07
-#define OPMODE_SLEEP			0x00
-#define OPMODE_STANDBY			0x01
-#define OPMODE_FSTX			0x02
-#define OPMODE_TX			0x03
-#define OPMODE_FSRX			0x04
-#define OPMODE_RX			0x05
-#define OPMODE_RX_SINGLE		0x06
-#define OPMODE_CAD			0x07
+// RegOpMode (address 0x01)
+// Mode - bits 2 to 0
+#define OPMODE_SLEEP      0x00  // xxxx x000
+#define OPMODE_STANDBY    0x01  // xxxx x001
+#define OPMODE_FSTX       0x02  // xxxx x010 - Frequency synthesis TX (FSTX)
+#define OPMODE_TX         0x03  // xxxx x011 - Transmit (TX)
+#define OPMODE_FSRX       0x04  // xxxx x100 - Frequency synthesis RX (FSRX)
+#define OPMODE_RX         0x05  // xxxx x101 - Receive continuous (RXCONTINUOUS)
+#define OPMODE_RX_SINGLE  0x06  // xxxx x110 - Receive single (RXSINGLE)
+                                // This mode should only be used when
+                                // the time window of arrival of the 
+                                // packet is known. In other cases,
+                                // the RX_Continuous mode should be used.
+                                // Source: SX1276 documentation
+#define OPMODE_CAD        0x07  // xxxx x111 - Channel activity detection (CAD)
+// Long Range Mode - bit 7
+// 0 = FSK/OOK mode (not our case)
+// 1 = LoRa mode (our case!)
+#define OPMODE_LORA			  0x80  // 1xxx xxxx
+
+// ???
+#define OPMODE_MASK			  0x07
+
 
 
 
@@ -328,13 +341,13 @@ struct LoraUp {
 
 // ----------------------------------------
 // MC2 definitions
-#define SX72_MC2_FSK                0x00
-#define SX72_MC2_SF7                0x70		// SF7 == 0x07, so (SF7<<4) == SX7_MC2_SF7
-#define SX72_MC2_SF8                0x80
-#define SX72_MC2_SF9                0x90
-#define SX72_MC2_SF10               0xA0
-#define SX72_MC2_SF11               0xB0
-#define SX72_MC2_SF12               0xC0
+#define SX72_MC2_FSK      0x00
+#define SX72_MC2_SF7      0x70		// SF7 == 0x07, so (SF7<<4) == SX7_MC2_SF7
+#define SX72_MC2_SF8      0x80
+#define SX72_MC2_SF9      0x90
+#define SX72_MC2_SF10     0xA0
+#define SX72_MC2_SF11     0xB0
+#define SX72_MC2_SF12     0xC0
 
 // ----------------------------------------
 // MC3
@@ -352,10 +365,10 @@ struct LoraUp {
 #define MAP_DIO0_LORA_RXDONE   		0x00  // 00------ bit 7 and 6
 #define MAP_DIO0_LORA_TXDONE   		0x40  // 01------
 #define MAP_DIO0_LORA_CADDONE  		0x80  // 10------
-#define MAP_DIO0_LORA_NOP   		0xC0  // 11------
+#define MAP_DIO0_LORA_NOP         0xC0  // 11------
 
 #define MAP_DIO1_LORA_RXTOUT   		0x00  // --00---- bit 5 and 4
-#define MAP_DIO1_LORA_FCC			0x10  // --01----
+#define MAP_DIO1_LORA_FCC			    0x10  // --01----
 #define MAP_DIO1_LORA_CADDETECT		0x20  // --10----
 #define MAP_DIO1_LORA_NOP      		0x30  // --11----
 
@@ -386,15 +399,16 @@ struct LoraUp {
 
 // ----------------------------------------
 // Definitions for UDP message arriving from server
-#define PROTOCOL_VERSION		0x01
+#define PROTOCOL_VERSION	0x01
 #define PKT_PUSH_DATA			0x00
 #define PKT_PUSH_ACK			0x01
 #define PKT_PULL_DATA			0x02
 #define PKT_PULL_RESP			0x03
 #define PKT_PULL_ACK			0x04
-#define PKT_TX_ACK                  	0x05
+#define PKT_TX_ACK        0x05
 
 #define MGT_RESET			0x15	// Not a LoRa Gateway Spec message
-#define MGT_SET_SF			0x16
-#define MGT_SET_FREQ			0x17
+#define MGT_SET_SF		0x16
+#define MGT_SET_FREQ	0x17
 
+// end of file

@@ -107,7 +107,9 @@
 	bool GetMutex(int *mutex) {
 
 	int iOld = 1, iNew = 0;
-
+  // inline assembly:
+  // - register names are preceded by %
+  // - Ordering of operands:
 	asm volatile (
 		"rsil a15, 1\n"    // read and set interrupt level to 1
 		"l32i %0, %1, 0\n" // load value of mutex
@@ -283,8 +285,7 @@ void setRate(uint8_t sf, uint8_t crc)
 #if DUSB>=2
 	if ((sf<SF7) || (sf>SF12)) {
       printTime();
-			Serial.print(F("_loraModem::setRate:: SF="));
-			Serial.println(sf);
+			Serial.print(F("_loraModem::setRate:: SF=")); Serial.println(sf);
 		return;
 	}
 #endif
@@ -734,8 +735,7 @@ void rxLoraModem()
 	if (_hop) {
 #if DUSB>=1
 			printTime();
-			Serial.print(F("rxLoraModem:: Hop, channel=")); 
-			Serial.println(ifreq); 
+			Serial.print(F("rxLoraModem:: Hop, channel=")); Serial.println(ifreq); 
 #endif
 		writeRegister(REG_HOP_PERIOD, 0x01);					// 0x24, 0x01 was 0xFF
 		// Set RXDONE interrupt to dio0
@@ -755,18 +755,29 @@ void rxLoraModem()
 		// Set Single Receive Mode, goes in STANDBY mode after receipt
 		_state = S_RX;
 		opmode(OPMODE_RX_SINGLE);								// 0x80 | 0x06 (listen one message)
+#if DUSB>=2
+    printTime();
+    Serial.println("_loraModem::rxLoraModem::opmode set to OPMODE_RX_SINGLE");
+#endif
 	}
 	else {
 		// Set Continous Receive Mode, usefull if we stay on one SF
 		_state= S_RX;
 		opmode(OPMODE_RX);										// 0x80 | 0x05 (listen)
+#if DUSB>=2
+    printTime();
+    Serial.println("_loraModem::rxLoraModem::opmode set to OPMODE_RX (continuous)");
+#endif
 	}
 	
 	// 9. clear all radio IRQ flags
     writeRegister(REG_IRQ_FLAGS, 0xFF);
-	
+#if DUSB>=2
+    printTime();
+    Serial.println("_loraModem::rxLoraModem::clear all radio IRQ flags");
+#endif
 	return;
-}// rxLoraModem
+} // end of rxLoraModem
 
 
 // ----------------------------------------------------------------------------
@@ -884,7 +895,7 @@ void initLoraModem()
     die("");
     }
 
-	// 2. Set radio to sleep
+	// 2. Set radio to sleep // WHY?????
 #if DUSB>=2
   printTime();
   Serial.println(F("_loraModem::initLoraModem::setting OPMODE_SLEEP"));
@@ -1168,7 +1179,7 @@ void stateMachine() {
 		if (intr & IRQ_LORA_CDDETD_MASK) {
 #if DUSB>=2
       printTime();
-     Serial.println("Changing to state S_RX");
+     Serial.println("Changing to state S_RX - OPMODE_RX_SINGLE");
 #endif
 			_state = S_RX;								// Set state to start receiving
 			opmode(OPMODE_RX_SINGLE);					// set reg 0x01 to 0x06, initiate READ
@@ -1530,8 +1541,8 @@ void stateMachine() {
 
 // ----------------------------------------------------------------------------
 // Interrupt_0 Handler.
-// Both interrupts DIO0 and DIO1 are mapped on GPIO15. Se we have to look at 
-// the interrupt flags to see which interrupt(s) are called.
+// Both interrupts DIO0 and DIO1 are mapped on GPIO26 for Heltec WiFi LoRa 32 board. (not GPIO15!).
+// So we have to look at the interrupt flags to see which interrupt(s) are called.
 //
 // NOTE:: This method may work not as good as just using more GPIO pins on 
 //  the ESP8266 mcu. But in practice it works good enough

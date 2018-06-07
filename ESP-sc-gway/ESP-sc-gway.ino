@@ -1367,11 +1367,11 @@ void loop () {
     if (_event != 0x00) {
 #if DUSB>=2
         printTime();
-        Serial.print("Event = 0x"); Serial.println(_event, HEX);
+        Serial.print("ESP-sc-gway::loop::_event = 0x"); Serial.println(_event, HEX);
         Serial.println("ESP-sc-gway::loop::calling stateMachine()");
 #endif
-        stateMachine();					// start the state machine
-        _event = 0;						// reset value
+        stateMachine();     // start the state machine
+        _event = 0;         // reset value
         return;							// Restart loop
     }
 	
@@ -1446,6 +1446,7 @@ void loop () {
         printTime();
         Serial.println(F("ESP-sc-gway::loop::WlanConnect success"));
 #endif
+        //Serial.println("ESP-sc-gway::loop::will run while packetSize");
         while( (packetSize = Udp.parsePacket()) > 0) {		// Length of UDP message waiting
 #if DUSB>=2
             printTime();
@@ -1460,11 +1461,14 @@ void loop () {
 #endif
                 break;
             } else { // Now we know we succesfull received message from host
-#if DUS>=2
+#if DUSB>=2
                 printTime();
-                Serial.println(F("ESP-sc-gway::readUDP::error reading UDP packet"));
+                Serial.println(F("ESP-sc-gway::loop::success reading UDP packet"));
+                printTime();
+                Serial.println(F("ESP-sc-gway::loop::setting _event=1"));
 #endif
-                _event=1;									// Could be done double if more messages received
+                //_event=1;									// Could be done double if more messages received
+                _event=0;
             }
         } // end of while( (packetSize = Udp.parsePacket()) > 0)
     } // end of 'connection to WiFi OK
