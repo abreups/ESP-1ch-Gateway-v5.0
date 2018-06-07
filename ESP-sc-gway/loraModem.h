@@ -99,32 +99,11 @@ struct pins {
 // For ComResult gateway PCB use the following settings
 struct pins {
   uint8_t dio0=26;   // GPIO5 / D1. Dio0 used for one frequency and one SF - OK. same as DIO0 below
-  uint8_t dio1=33;   // GPIO4 / D2. Used for CAD, may or not be shared with DIO0 - ??? not LoRa in ESP32
-  uint8_t dio2=32;   // GPIO0 / D3. Used for frequency hopping, don't care -  ??? not LoRa in ESP32
+  uint8_t dio1=33;   // GPIO4 / D2. Used for CAD, may or not be shared with DIO0 - not documented in Heltec's pinout diagram
+  uint8_t dio2=32;   // GPIO0 / D3. Used for frequency hopping, don't care - not documented in Heltec's pinout diagram
   uint8_t ss=18;    // GPIO15 / D8. Select pin connected to GPIO15 - OK. same as DIO0 below
   uint8_t rst=14;    // GPIO0 / D3. Reset pin not used - OK. same as DIO0 below
 // Pin definetion of WIFI LoRa 32
-// HelTec AutoMation 2017 support@heltec.cn 
-// Pinout: http://www.heltec.cn/download/WIFI_LoRa_32_Diagram.pdf
-#define SCK     5    // GPIO5  -- SX127x's SCK    (LoRa_SCK)
-#define MISO    19   // GPIO19 -- SX127x's MISO   (LoRa_MISO)
-#define MOSI    27   // GPIO27 -- SX127x's MOSI   (LoRa_MOSI)
-#define SS      18   // GPIO18 -- SX127x's CS     (LoRa_CS)
-#define RST     14   // GPIO14 -- SX127x's RESET  (LoRa_RST)
-#define DI00    26   // GPIO26 -- SX127x's IRQ    (LoRa_IRQ)
-// Line above defines DI00 == d i zero zero!
-// But neither DI00 (zero zero) nor DIO0 (letter O and zero) seem to be used anywhere in the code.
-} pins;
-
-#elif _PIN_OUT==4
-// For ComResult gateway PCB use the following settings
-struct pins {
-  uint8_t dio0=26;   // GPIO5 / D1. Dio0 used for one frequency and one SF - OK. same as DIO0 below
-  uint8_t dio1=26;   // GPIO4 / D2. Used for CAD, may or not be shared with DIO0 - ??? not LoRa in ESP32 --> FIXED
-  uint8_t dio2=26;   // GPIO0 / D3. Used for frequency hopping, don't care -  ??? not LoRa in ESP32 --> FIXED
-  uint8_t ss=18;    // GPIO15 / D8. Select pin connected to GPIO15 - OK. same as DIO0 below
-  uint8_t rst=14;    // GPIO0 / D3. Reset pin not used - OK. same as DIO0 below
-// Pin defenition of WIFI LoRa 32
 // HelTec AutoMation 2017 support@heltec.cn 
 // Pinout: http://www.heltec.cn/download/WIFI_LoRa_32_Diagram.pdf
 #define SCK     5    // GPIO5  -- SX127x's SCK    (LoRa_SCK)
@@ -169,22 +148,22 @@ struct stat_t statr[MAX_STAT];
 // message. Example: Number of messages received on SF7 or number of (re) boots
 // So where statr contains the statistics gathered per packet the statc
 // contains general statics of the node
-#if STATISTICS >= 2							// Only if we explicitely set it higher
+#if STATISTICS >= 2			// Only if we explicitely set it higher
 struct stat_c {
-	unsigned long sf7;						// Spreading factor 7
-	unsigned long sf8;						// Spreading factor 8
-	unsigned long sf9;						// Spreading factor 9
-	unsigned long sf10;						// Spreading factor 10
-	unsigned long sf11;						// Spreading factor 11
-	unsigned long sf12;						// Spreading factor 12
-	uint16_t boots;							// Number of boots
+	unsigned long sf7;		// Spreading factor 7
+	unsigned long sf8;		// Spreading factor 8
+	unsigned long sf9;		// Spreading factor 9
+	unsigned long sf10;		// Spreading factor 10
+	unsigned long sf11;		// Spreading factor 11
+	unsigned long sf12;		// Spreading factor 12
+	uint16_t boots;			// Number of boots
 	uint16_t resets;
 } stat_c;
 
 struct stat_c statc;
 #endif
 #else // STATISTICS==0
-struct stat_t statr[1];						// Always have at least one element to store in
+struct stat_t statr[1];			// Always have at least one element to store in
 #endif
 
 // Define the payload structure used to separate interrupt ans SPI
@@ -220,14 +199,14 @@ struct LoraUp {
 // Do not change these setting for RSSI detection. They are used for CAD
 // Given the correction factor of 157, we can get to -120dB with this rating
 // 
-#define RSSI_LIMIT	37							// was 39
-#define RSSI_LIMIT_DOWN 34						// Was 34
+#define RSSI_LIMIT	37			// was 39
+#define RSSI_LIMIT_DOWN 34			// Was 34
 
 // How long to wait in LoRa mode before using the RSSI value.
 // This period should be as short as possible, yet sufficient
 // 
-#define RSSI_WAIT	15							// was 100 works, 50 works, 40 works, 25 works
-#define RSSI_WAIT_DOWN 10						// was 75 works, 35 works, 30 works, 20 works
+#define RSSI_WAIT	15			// was 100 works, 50 works, 40 works, 25 works
+#define RSSI_WAIT_DOWN 10			// was 75 works, 35 works, 30 works, 20 works
 
 // ============================================================================
 // Set all definitions for Gateway
@@ -269,13 +248,13 @@ struct LoraUp {
 #define REG_INVERTIQ			0x33
 #define REG_DET_TRESH			0x37	// SF6
 #define REG_SYNC_WORD			0x39
-#define REG_TEMP			    0x3C
+#define REG_TEMP			0x3C
 
 #define REG_DIO_MAPPING_1		0x40
 #define REG_DIO_MAPPING_2		0x41
-#define REG_VERSION			    0x42
+#define REG_VERSION			0x42
 
-#define REG_PADAC			      0x5A
+#define REG_PADAC			0x5A
 #define REG_PADAC_SX1272		0x5A
 #define REG_PADAC_SX1276		0x4D
 
@@ -285,7 +264,7 @@ struct LoraUp {
 #define SX72_MODE_SLEEP			    0x80
 #define SX72_MODE_STANDBY		    0x81
 #define SX72_MODE_FSTX			    0x82
-#define SX72_MODE_TX			      0x83	// 0x80 | 0x03
+#define SX72_MODE_TX			    0x83	// 0x80 | 0x03
 #define SX72_MODE_RX_CONTINUOS  0x85
 
 // ----------------------------------------
@@ -365,10 +344,10 @@ struct LoraUp {
 #define MAP_DIO0_LORA_RXDONE   		0x00  // 00------ bit 7 and 6
 #define MAP_DIO0_LORA_TXDONE   		0x40  // 01------
 #define MAP_DIO0_LORA_CADDONE  		0x80  // 10------
-#define MAP_DIO0_LORA_NOP         0xC0  // 11------
+#define MAP_DIO0_LORA_NOP         	0xC0  // 11------
 
 #define MAP_DIO1_LORA_RXTOUT   		0x00  // --00---- bit 5 and 4
-#define MAP_DIO1_LORA_FCC			    0x10  // --01----
+#define MAP_DIO1_LORA_FCC		0x10  // --01----
 #define MAP_DIO1_LORA_CADDETECT		0x20  // --10----
 #define MAP_DIO1_LORA_NOP      		0x30  // --11----
 
@@ -399,16 +378,16 @@ struct LoraUp {
 
 // ----------------------------------------
 // Definitions for UDP message arriving from server
-#define PROTOCOL_VERSION	0x01
+#define PROTOCOL_VERSION		0x01
 #define PKT_PUSH_DATA			0x00
 #define PKT_PUSH_ACK			0x01
 #define PKT_PULL_DATA			0x02
 #define PKT_PULL_RESP			0x03
 #define PKT_PULL_ACK			0x04
-#define PKT_TX_ACK        0x05
+#define PKT_TX_ACK        		0x05
 
 #define MGT_RESET			0x15	// Not a LoRa Gateway Spec message
-#define MGT_SET_SF		0x16
-#define MGT_SET_FREQ	0x17
+#define MGT_SET_SF			0x16
+#define MGT_SET_FREQ			0x17
 
 // end of file
