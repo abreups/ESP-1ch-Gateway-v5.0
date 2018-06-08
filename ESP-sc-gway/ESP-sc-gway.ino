@@ -208,78 +208,70 @@ void ICACHE_FLASH_ATTR ReleaseMutex(int *mutex);
 // somewhere.
 // There are at least 3 other ways to restart the ESP. Pick one if you want.
 // ----------------------------------------------------------------------------
-void die(const char *s)
-{
-	Serial.println(s);
-	Serial.flush();
+void die(const char *s) {
+    Serial.println(s);
+    Serial.flush();
+    delay(50);
+    // system_restart();						// SDK function
+    // ESP.reset();				
+    abort();									// Within a second
+} // end of die ()
 
-	delay(50);
-	// system_restart();						// SDK function
-	// ESP.reset();				
-	abort();									// Within a second
-}
 
 // ----------------------------------------------------------------------------
 // gway_failed is a function called by ASSERT in ESP-sc-gway.h
-//
 // ----------------------------------------------------------------------------
 void gway_failed(const char *file, uint16_t line) {
-	Serial.print(F("Program failed in file: "));
-	Serial.print(file);
-	Serial.print(F(", line: "));
-	Serial.println(line);
-	//if (debug>=2) Serial.flush();
-	Serial.flush();
-}
+    Serial.print(F("Program failed in file: "));
+    Serial.print(file);
+    Serial.print(F(", line: "));
+    Serial.println(line);
+    Serial.flush();
+} // end of gway_failed()
+
 
 // ----------------------------------------------------------------------------
 // Print leading '0' digits for hours(0) and second(0) when
 // printing values less than 10
+// Utility function for digital clock display: prints leading 0
 // ----------------------------------------------------------------------------
-void printDigits(unsigned long digits)
-{
-    // utility function for digital clock display: prints leading 0
-    if(digits < 10)
-        Serial.print(F("0"));
+void printDigits(unsigned long digits) {
+
+    if(digits < 10) Serial.print(F("0"));
     Serial.print(digits);
-}
+} // end of printDigits()
+
 
 // ----------------------------------------------------------------------------
 // Print utin8_t values in HEX with leading 0 when necessary
+// utility function for printing Hex Values with leading 0
 // ----------------------------------------------------------------------------
-void printHexDigit(uint8_t digit)
-{
-    // utility function for printing Hex Values with leading 0
-    if(digit < 0x10)
-        Serial.print('0');
+void printHexDigit(uint8_t digit) {
+    if(digit < 0x10) Serial.print('0');
     Serial.print(digit,HEX);
-}
+} // end of printHexDigit()
 
 
 // ----------------------------------------------------------------------------
 // Print the current time
 // ----------------------------------------------------------------------------
 static void printTime() {
-	switch (weekday())
-	{
-		case 1: Serial.print(F("Sunday")); break;
-		case 2: Serial.print(F("Monday")); break;
-		case 3: Serial.print(F("Tuesday")); break;
-		case 4: Serial.print(F("Wednesday")); break;
-		case 5: Serial.print(F("Thursday")); break;
-		case 6: Serial.print(F("Friday")); break;
-		case 7: Serial.print(F("Saturday")); break;
-		default: Serial.print(F("ERROR")); break;
-	}
-	Serial.print(F(" "));
-	printDigits(hour());
-	Serial.print(F(":"));
-	printDigits(minute());
-	Serial.print(F(":"));
-	printDigits(second());
-  	Serial.print(F(" "));
-	return;
-}
+    switch (weekday()) {
+        case 1: Serial.print(F("Sunday")); break;
+        case 2: Serial.print(F("Monday")); break;
+        case 3: Serial.print(F("Tuesday")); break;
+        case 4: Serial.print(F("Wednesday")); break;
+        case 5: Serial.print(F("Thursday")); break;
+        case 6: Serial.print(F("Friday")); break;
+        case 7: Serial.print(F("Saturday")); break;
+        default: Serial.print(F("ERROR")); break;
+    }
+    Serial.print(F(" ")); printDigits(hour());
+    Serial.print(F(":")); printDigits(minute());
+    Serial.print(F(":")); printDigits(second());
+    Serial.print(F(" "));
+    return;
+} // end of printTime()
 
 
 // ----------------------------------------------------------------------------
@@ -290,61 +282,56 @@ static void printTime() {
 //	val is character array for results
 // ----------------------------------------------------------------------------
 void ftoa(float f, char *val, int p) {
-	int j=1;
-	int ival, fval;
-	char b[7] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-	
-	for (int i=0; i< p; i++) { j= j*10; }
+    int j=1;
+    int ival, fval;
+    char b[7] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-	ival = (int) f;								// Make integer part
-	fval = (int) ((f- ival)*j);					// Make fraction. Has same sign as integer part
-	if (fval<0) fval = -fval;					// So if it is negative make fraction positive again.
-												// sprintf does NOT fit in memory
-	strcat(val,itoa(ival,b,10));				// Copy integer part first, base 10, null terminated
-	strcat(val,".");							// Copy decimal point
-	
-	itoa(fval,b,10);							// Copy fraction part base 10
-	for (int i=0; i<(p-strlen(b)); i++) {
-		strcat(val,"0"); 						// first number of 0 of faction?
-	}
-	
-	// Fraction can be anything from 0 to 10^p , so can have less digits
-	strcat(val,b);
-}
+    for (int i=0; i< p; i++) { j= j*10; }
+
+    ival = (int) f;                         // Make integer part
+    fval = (int) ((f- ival)*j);             // Make fraction. Has same sign as integer part
+    if (fval<0) fval = -fval;               // So if it is negative make fraction positive again.
+                                            // sprintf does NOT fit in memory
+    strcat(val,itoa(ival,b,10));            // Copy integer part first, base 10, null terminated
+    strcat(val,".");                        // Copy decimal point
+    itoa(fval,b,10);                        // Copy fraction part base 10
+    for (int i=0; i<(p-strlen(b)); i++) {
+        strcat(val,"0");                    // first number of 0 of faction?
+    }
+    // Fraction can be anything from 0 to 10^p , so can have less digits
+    strcat(val,b);
+} // end of ftoa()
+
 
 // ============================================================================
 // NTP TIME functions
 
 
-
 // ----------------------------------------------------------------------------
 // Send the request packet to the NTP server.
-//
 // ----------------------------------------------------------------------------
 int sendNtpRequest(IPAddress timeServerIP) {
-	const int NTP_PACKET_SIZE = 48;				// Fixed size of NTP record
-	byte packetBuffer[NTP_PACKET_SIZE];
+    const int NTP_PACKET_SIZE = 48;				// Fixed size of NTP record
+    byte packetBuffer[NTP_PACKET_SIZE];
+    memset(packetBuffer, 0, NTP_PACKET_SIZE);	// Zeroise the buffer.
 
-	memset(packetBuffer, 0, NTP_PACKET_SIZE);	// Zeroise the buffer.
-	
-	packetBuffer[0]  = 0b11100011;   			// LI, Version, Mode
-	packetBuffer[1]  = 0;						// Stratum, or type of clock
-	packetBuffer[2]  = 6;						// Polling Interval
-	packetBuffer[3]  = 0xEC;					// Peer Clock Precision
-	// 8 bytes of zero for Root Delay & Root Dispersion
-	packetBuffer[12] = 49;
-	packetBuffer[13] = 0x4E;
-	packetBuffer[14] = 49;
-	packetBuffer[15] = 52;	
+    packetBuffer[0]  = 0b11100011;    // LI, Version, Mode
+    packetBuffer[1]  = 0;             // Stratum, or type of clock
+    packetBuffer[2]  = 6;             // Polling Interval
+    packetBuffer[3]  = 0xEC;          // Peer Clock Precision
+    // 8 bytes of zero for Root Delay & Root Dispersion
+    packetBuffer[12] = 49;
+    packetBuffer[13] = 0x4E;
+    packetBuffer[14] = 49;
+    packetBuffer[15] = 52;	
 
-	
-	if (!sendUdp( (IPAddress) timeServerIP, (int) 123, packetBuffer, NTP_PACKET_SIZE)) {
-		gwayConfig.ntpErr++;
-		gwayConfig.ntpErrTime = millis();
-		return(0);	
-	}
-	return(1);
-}
+    if (!sendUdp( (IPAddress) timeServerIP, (int) 123, packetBuffer, NTP_PACKET_SIZE)) {
+        gwayConfig.ntpErr++;
+        gwayConfig.ntpErrTime = millis();
+        return(0);	
+    }
+    return(1);
+} // end of sendNtpRequest()
 
 
 // ----------------------------------------------------------------------------
@@ -352,56 +339,46 @@ int sendNtpRequest(IPAddress timeServerIP) {
 // Note: As this function is called from SyncINterval in the background
 //	make sure we have no blocking calls in this function
 // ----------------------------------------------------------------------------
-time_t getNtpTime()
-{
-	gwayConfig.ntps++;
-	
-    if (!sendNtpRequest(ntpServer))					// Send the request for new time
-	{
-		//if (debug>0) Serial.println(F("sendNtpRequest failed"));
-	    	Serial.println(F("sendNtpRequest failed"));
-		return(0);
-	}
-	
-	const int NTP_PACKET_SIZE = 48;					// Fixed size of NTP record
-	byte packetBuffer[NTP_PACKET_SIZE];
-	memset(packetBuffer, 0, NTP_PACKET_SIZE);		// Set buffer cntents to zero
-
-    	uint32_t beginWait = millis();
-	delay(10);
-   	 while (millis() - beginWait < 1500) 
-	{
-		int size = Udp.parsePacket();
-		if ( size >= NTP_PACKET_SIZE ) {
-		
-			if (Udp.read(packetBuffer, NTP_PACKET_SIZE) < NTP_PACKET_SIZE) {
-				break;
-			}
-			else {
-				// Extract seconds portion.
-				unsigned long secs;
-				secs  = packetBuffer[40] << 24;
-				secs |= packetBuffer[41] << 16;
-				secs |= packetBuffer[42] <<  8;
-				secs |= packetBuffer[43];\
-				// UTC is 1 TimeZone correction when no daylight saving time
-				return(secs - 2208988800UL + NTP_TIMEZONES * SECS_PER_HOUR);
-			}
-			Udp.flush();	
-		}
-		delay(100);									// Wait 100 millisecs, allow kernel to act when necessary
+time_t getNtpTime() {
+    gwayConfig.ntps++;
+    if (!sendNtpRequest(ntpServer)) {					// Send the request for new time
+        Serial.println(F("sendNtpRequest failed"));
+        return(0);
     }
 
-	Udp.flush();
-	
-	// If we are here, we could not read the time from internet
-	// So increase the counter
-	gwayConfig.ntpErr++;
-	gwayConfig.ntpErrTime = millis();
-	//if (debug>0) Serial.println(F("getNtpTime:: read failed"));
-	Serial.println(F("getNtpTime:: read failed"));
-	return(0); 										// return 0 if unable to get the time
-}
+    const int NTP_PACKET_SIZE = 48;             // Fixed size of NTP record
+    byte packetBuffer[NTP_PACKET_SIZE];
+    memset(packetBuffer, 0, NTP_PACKET_SIZE);   // Set buffer cntents to zero
+    uint32_t beginWait = millis();
+    delay(10);
+    while (millis() - beginWait < 1500) {
+        int size = Udp.parsePacket();
+        if ( size >= NTP_PACKET_SIZE ) {
+            if (Udp.read(packetBuffer, NTP_PACKET_SIZE) < NTP_PACKET_SIZE) {
+                break;
+            } else {
+                // Extract seconds portion.
+                unsigned long secs;
+                secs  = packetBuffer[40] << 24;
+                secs |= packetBuffer[41] << 16;
+                secs |= packetBuffer[42] <<  8;
+                secs |= packetBuffer[43];\
+                // UTC is 1 TimeZone correction when no daylight saving time
+                return(secs - 2208988800UL + NTP_TIMEZONES * SECS_PER_HOUR);
+            }
+            Udp.flush();	
+        }
+        delay(100);									// Wait 100 millisecs, allow kernel to act when necessary
+    }
+    Udp.flush();
+    // If we are here, we could not read the time from internet
+    // So increase the counter
+    gwayConfig.ntpErr++;
+    gwayConfig.ntpErrTime = millis();
+    Serial.println(F("getNtpTime:: read failed"));
+    return(0);  // return 0 if unable to get the time
+} // end of getNtpTime()
+
 
 // ----------------------------------------------------------------------------
 // Set up regular synchronization of NTP server and the local time.
@@ -420,62 +397,52 @@ void setupTime() {
 
 // ----------------------------------------------------------------------------
 // config.txt is a text file that contains lines(!) with WPA configuration items
-// Each line contains an KEY vaue pair describing the gateway configuration
-//
+// Each line contains an KEY value pair describing the gateway configuration
 // ----------------------------------------------------------------------------
 int WlanReadWpa() {
-	
-	readConfig( CONFIGFILE, &gwayConfig);
 
-	if (gwayConfig.sf != (uint8_t) 0) sf = (sf_t) gwayConfig.sf;
-	ifreq = gwayConfig.ch;
-	debug = gwayConfig.debug;
-	_cad = gwayConfig.cad;
-	_hop = gwayConfig.hop;
-	gwayConfig.boots++;							// Every boot of the system we increase the reset
-	
+    readConfig( CONFIGFILE, &gwayConfig);
+    if (gwayConfig.sf != (uint8_t) 0) sf=(sf_t) gwayConfig.sf;
+    ifreq = gwayConfig.ch;
+    debug = gwayConfig.debug;
+    _cad = gwayConfig.cad;
+    _hop = gwayConfig.hop;
+    gwayConfig.boots++;         // Every boot of the system we increase the reset
+
 #if GATEWAYNODE==1
-	if (gwayConfig.fcnt != (uint8_t) 0) frameCount = gwayConfig.fcnt+10;
+    if (gwayConfig.fcnt != (uint8_t) 0) frameCount = gwayConfig.fcnt+10;
 #endif
 	
 #if WIFIMANAGER > 0
 	String ssid=gwayConfig.ssid;
 	String pass=gwayConfig.pass;
-
 	char ssidBuf[ssid.length()+1];
 	ssid.toCharArray(ssidBuf,ssid.length()+1);
 	char passBuf[pass.length()+1];
 	pass.toCharArray(passBuf,pass.length()+1);
 	Serial.print(F("WlanReadWpa: ")); Serial.print(ssidBuf); Serial.print(F(", ")); Serial.println(passBuf);
-	
 	strcpy(wpa[0].login, ssidBuf);				// XXX changed from wpa[0][0] = ssidBuf
 	strcpy(wpa[0].passw, passBuf);
-	
 	Serial.print(F("WlanReadWpa: <")); 
 	Serial.print(wpa[0].login); 				// XXX
 	Serial.print(F(">, <")); 
 	Serial.print(wpa[0].passw);
 	Serial.println(F(">"));
 #endif
+} // end of WlanReadWpa()
 
-}
 
 // ----------------------------------------------------------------------------
 // Print the WPA data of last WiFiManager to file
 // ----------------------------------------------------------------------------
 #if WIFIMANAGER==1
 int WlanWriteWpa( char* ssid, char *pass) {
-
-	Serial.print(F("WlanWriteWpa:: ssid=")); 
-	Serial.print(ssid);
-	Serial.print(F(", pass=")); 
-	Serial.print(pass); 
-	Serial.println();
+	printTime(); Serial.print(F("WlanWriteWpa:: ssid=")); Serial.print(ssid);
+	Serial.print(F(", pass=")); Serial.println(pass); 
 	
 	// Version 3.3 use of config file
 	String s((char *) ssid);
 	gwayConfig.ssid = s;
-	
 	String p((char *) pass);
 	gwayConfig.pass = p;
 
@@ -487,10 +454,11 @@ int WlanWriteWpa( char* ssid, char *pass) {
 	gwayConfig.cad = _cad;
 	gwayConfig.hop = _hop;
 	
-	writeConfig( CONFIGFILE, &gwayConfig);
+	writeConfig( CONFIGFILE, &gwayConfig );
 	return 1;
-}
+} // end WlanWriteWpa()
 #endif
+
 
 // ----------------------------------------------------------------------------
 // Function to join the Wifi Network
@@ -507,99 +475,78 @@ int WlanWriteWpa( char* ssid, char *pass) {
 //		int number of retries necessary
 // ----------------------------------------------------------------------------
 int WlanConnect(int maxTry) {
-  
 #if WIFIMANAGER==1
-	WiFiManager wifiManager;
+    WiFiManager wifiManager;
 #endif
-
-	unsigned char agains = 0;
-	unsigned char wpa_index = (WIFIMANAGER >0 ? 0 : 1);		// Skip over first record for WiFiManager
-	
-	// So try to connect to WLAN as long as we are not connected.
-	// The try parameters tells us how many times we try before giving up
-	int i=0;
-
-	// We try 5 times before giving up on connect
-	while ( (WiFi.status() != WL_CONNECTED) && ( i< maxTry ) )
-	{
-
-	  // We try every SSID in wap array until success
-	  for (int j=wpa_index; j< (sizeof(wpa)/sizeof(wpa[0])) ; j++) {
-	 
-		// Start with well-known access points in the list
-		char *ssid		= wpa[j].login;
-		char *password	= wpa[j].passw;
-	
-		Serial.print(i);
-		Serial.print(':');
-		Serial.print(j); 
-		Serial.print(F(". WiFi connect to: ")); 
-		Serial.println(ssid);
-		
-		// Count the number of times we call WiFi.begin
-		gwayConfig.wifis++;
-		writeGwayCfg(CONFIGFILE);
-		
-		WiFi.begin(ssid, password);
-		
-		// We increase the time for connect but try the same SSID
-		// We try for 9 times
-		agains=0;
-		while ((WiFi.status() != WL_CONNECTED) && (agains < 9)) {
-			delay(agains*400);
-			agains++;
-			if (debug>=2) Serial.print(".");
-		}
-		if (WiFi.status() == WL_CONNECTED) 
-			break;
-		else 
-			WiFi.disconnect();
-	  } //for
-	  i++;													// Number of times we try to connect
-	}
+    unsigned char agains = 0;
+    unsigned char wpa_index = (WIFIMANAGER >0 ? 0 : 1);		// Skip over first record for WiFiManager
+    
+    // So try to connect to WLAN as long as we are not connected.
+    // The try parameters tells us how many times we try before giving up
+    int i=0;
+    
+    // We try 5 times before giving up on connect
+    while ( (WiFi.status() != WL_CONNECTED) && ( i < maxTry ) ) {
+        // We try every SSID in wap array until success
+        for (int j=wpa_index; j< (sizeof(wpa)/sizeof(wpa[0])) ; j++) {
+            // Start with well-known access points in the list
+            char *ssid		= wpa[j].login;
+            char *password	= wpa[j].passw;
+            Serial.print(i); Serial.print(':'); Serial.print(j); Serial.print(F(". WiFi connect to: ")); Serial.println(ssid);
+            // Count the number of times we call WiFi.begin
+            gwayConfig.wifis++;
+            writeGwayCfg(CONFIGFILE);
+            WiFi.begin(ssid, password);
+            // We increase the time for connect but try the same SSID
+            // We try for 9 times
+            agains=0;
+            while ((WiFi.status() != WL_CONNECTED) && (agains < 9)) {
+                delay(agains*400);
+                agains++;
+                Serial.print(".");
+            } // end while
+            if (WiFi.status() == WL_CONNECTED)
+            	break;
+            else 
+            	WiFi.disconnect();
+        } // end for
+        i++;    // Number of times we try to connect
+    } // end while
 	
 #if DUSB>=1
-	if (i>0) {
-		Serial.print(F("WLAN reconnected"));
-		Serial.println();
-	}
+    if (i>0) Serial.println(F("WLAN reconnected"));
 #endif
   
-	// Still not connected?
-	if (WiFi.status() != WL_CONNECTED) {
+    // Still not connected?
+    if (WiFi.status() != WL_CONNECTED) {
 #if WIFIMANAGER==1
-		Serial.println(F("Starting Access Point Mode"));
-		Serial.print(F("Connect Wifi to accesspoint: "));
-		Serial.print(AP_NAME);
-		Serial.print(F(" and connect to IP: 192.168.4.1"));
-		Serial.println();
-		wifiManager.autoConnect(AP_NAME, AP_PASSWD );
-		//wifiManager.startConfigPortal(AP_NAME, AP_PASSWD );
-		// At this point, there IS a Wifi Access Point found and connected
-		// We must connect to the local SPIFFS storage to store the access point
-		//String s = WiFi.SSID();
-		//char ssidBuf[s.length()+1];
-		//s.toCharArray(ssidBuf,s.length()+1);
-		// Now look for the password
-		struct station_config sta_conf;
-		wifi_station_get_config(&sta_conf);
-
-		//WlanWriteWpa(ssidBuf, (char *)sta_conf.password);
-		WlanWriteWpa((char *)sta_conf.ssid, (char *)sta_conf.password);
+        printTime(); Serial.println(F("Starting Access Point Mode"));
+        Serial.print(F("Connect Wifi to accesspoint: ")); Serial.println(AP_NAME);
+        Serial.println(F(" and connect to IP: 192.168.4.1"));
+        wifiManager.autoConnect(AP_NAME, AP_PASSWD );
+        //wifiManager.startConfigPortal(AP_NAME, AP_PASSWD );
+        // At this point, there IS a Wifi Access Point found and connected
+        // We must connect to the local SPIFFS storage to store the access point
+        //String s = WiFi.SSID();
+        //char ssidBuf[s.length()+1];
+        //s.toCharArray(ssidBuf,s.length()+1);
+        // Now look for the password
+        struct station_config sta_conf;
+        wifi_station_get_config(&sta_conf);
+        //WlanWriteWpa(ssidBuf, (char *)sta_conf.password);
+        WlanWriteWpa((char *)sta_conf.ssid, (char *)sta_conf.password);
 #else
-		return(-1);
+        return(-1);
 #endif
-	}
-
-	yield();
-  
-	return(1);
-}
+    }
+    yield();
+    return(1);
+} // end of WlanConnect()
 
 
 // ----------------------------------------------------------------------------
 // Read DOWN a package from UDP socket, can come from any server
-// Messages are received when server responds to gateway requests from LoRa nodes 
+// Messages are received when server responds to gateway requests from LoRa nodes
 // (e.g. JOIN requests etc.) or when server has downstream data.
 // We repond only to the server that sent us a message!
 // Note: So normally we can forget here about codes that do upstream
@@ -622,7 +569,7 @@ int readUdp(int packetSize) {
 #if DUSB>=1
       printTime();
 			Serial.print(F("ESP-sc-gway::readdUdp:: ERROR connecting to WLAN"));
-			Serial.flush();
+			//Serial.flush();
 #endif
 			Udp.flush();
 			yield();
@@ -644,8 +591,7 @@ int readUdp(int packetSize) {
 	// In practice however this can be any sender!
 	if (Udp.read(buff_down, packetSize) < packetSize) {
 #if DUSB>=1
-    printTime();
-		Serial.println(F("ESP-sc-gway::readUsb:: UDP packet reading error - fewer chars"));
+    printTime(); Serial.println(F("ESP-sc-gway::readUsb:: UDP packet reading error - fewer chars"));
 		return(-1);
 #endif
 	}
@@ -656,76 +602,79 @@ int readUdp(int packetSize) {
 	// Remote port is either of the remote TTN server or from NTP server (=123)
 	unsigned int remotePortNo = Udp.remotePort();
 
-	if (remotePortNo == 123) {
-		// This is an NTP message arriving (port 123 is ntp)
+	if (remotePortNo == 123) { // This is an NTP message arriving (port 123 is ntp)
 #if DUSB>=2
-    printTime();
-		Serial.println(F("ESP-sc-gway::readUdp:: NTP msg rcvd from LoRa server"));
+    printTime(); Serial.println(F("ESP-sc-gway::readUdp:: NTP msg rcvd from LoRa server"));
 #endif
 		gwayConfig.ntpErr++;
 		gwayConfig.ntpErrTime = millis();
 		return(0);
-	}
-	
-	// If it is not NTP it must be a LoRa message for gateway or node
-	else {
+	} else { // If it is not NTP it must be a LoRa message for gateway or node
 		uint8_t *data = (uint8_t *) ((uint8_t *)buff_down + 4);
 		protocol = buff_down[0];
 		token = buff_down[2]*256 + buff_down[1];
 		ident = buff_down[3];
+#if DUSB>=2
+    printTime(); Serial.print("ESP-sc-gway::readUdp::protocol = 0x"); Serial.println(protocol, HEX);
+    printTime(); Serial.print("ESP-sc-gway::readUdp::token = "); Serial.println(token);
+    printTime(); Serial.print("ESP-sc-gway::readUdp::ident = 0x"); Serial.println(ident, HEX);
+#endif
 
 		// now parse the message type from the server (if any)
 		switch (ident) {
 
+        //-----------------------------------------------------------------------
         case PKT_PUSH_DATA: // 0x00 UP
         // This message is used by the gateway to send sensor data to the
         // server. As this function is used for downstream only, this option
         // will never be selected but is included as a reference only
-#if DUSB>=1
-            printTime();
-            Serial.println(F("ESP-sc-gway::readUdp:: msg rcvd from LoRa server:"));
-      			Serial.print(F("PKT_PUSH_DATA:: size ")); Serial.print(packetSize);
-      			Serial.print(F(" From ")); Serial.print(remoteIpNo);
-      			Serial.print(F(", port ")); Serial.print(remotePortNo);
-      			Serial.print(F(", data: "));
+        //-----------------------------------------------------------------------
+#if DUSB>=2
+            printTime(); Serial.print("ESP-sc-gway::readUdp::ident = PKT_PUSH_DATA = "); Serial.println(ident);
+      			Serial.print(F("    size = ")); Serial.println(packetSize);
+      			Serial.print(F("    From = ")); Serial.println(remoteIpNo);
+      			Serial.print(F("    port = ")); Serial.println(remotePortNo);
+      			Serial.print(F("    data = "));
       			for (int i=0; i<packetSize; i++) {
       				Serial.print(buff_down[i],HEX);
       				Serial.print(':');
       			}
-      			Serial.println();
-      			Serial.flush();
+      			Serial.println();	Serial.flush();
 #endif
             break;
 
+        //-----------------------------------------------------------------------
         case PKT_PUSH_ACK:  // 0x01 DOWN
         // This message is sent by the server to acknoledge receipt of a
         // (sensor) message sent with the code above.
-#if DUSB>=1
-            printTime();
-            Serial.println(F("ESP-sc-gway::readUdp:: msg rcvd from LoRa server:"));
-      			Serial.print(F("PKT_PUSH_ACK:: size ")); Serial.print(packetSize);
-      			Serial.print(F(" From ")); Serial.print(remoteIpNo);
-      			Serial.print(F(", port ")); Serial.print(remotePortNo);
-      			Serial.print(F(", token: ")); Serial.println(token, HEX);
-      			Serial.println();
-#endif
-            break;
-	
-        case PKT_PULL_DATA:	// 0x02 UP
-        // ???
-        // ???
-#if DUSB>=1
-            printTime();
-            Serial.print(F("ESP-sc-gway::readUdp::PKT_PULL_DATA received"));
+        //-----------------------------------------------------------------------
+#if DUSB>=2
+            printTime(); Serial.print("ESP-sc-gway::readUdp::ident = PKT_PUSH_ACK = "); Serial.println(ident);
+      			Serial.print(F("    size = ")); Serial.println(packetSize);
+      			Serial.print(F("    From = ")); Serial.println(remoteIpNo);
+      			Serial.print(F("    port = ")); Serial.println(remotePortNo);
+      			Serial.print(F("    token = ")); Serial.println(token, HEX);
+      			//Serial.println();
 #endif
             break;
 
+        //-----------------------------------------------------------------------
+        case PKT_PULL_DATA:	// 0x02 UP
+        // ???
+        // ???
+        //-----------------------------------------------------------------------
+#if DUSB>=2
+            printTime(); Serial.print("ESP-sc-gway::readUdp::ident = PKT_PULL_DATA = "); Serial.println(ident);
+#endif
+            break;
+
+        //-----------------------------------------------------------------------
         case PKT_PULL_RESP: // 0x03 DOWN
         // This message type is used to confirm OTAA message to the node
         // XXX This message format may also be used for other downstream communucation
+        //-----------------------------------------------------------------------
 #if DUSB>=1
-            printTime();
-            Serial.println(F("ESP-sc-gway::readUdp:: PKT_PULL_RESP received"));
+            printTime(); Serial.print("ESP-sc-gway::readUdp::ident = PKT_PULL_RESP = "); Serial.println(ident);
 #endif
             lastTmst = micros();					// Store the tmst this package was received
 			
@@ -750,9 +699,8 @@ int readUdp(int packetSize) {
             buff[10]=MAC_array[4];
             buff[11]=MAC_array[5];
             buff[12]=0;
-#if DUSB>=1
-            printTime();
-            Serial.println(F("ESP-sc-gway::readUdp:: TX buff filled"));
+#if DUSB>=2
+            printTime(); Serial.println(F("ESP-sc-gway::readUdp:: TX buff filled"));
 #endif
             // Only send the PKT_PULL_ACK to the UDP socket that just sent the data!!!
             Udp.beginPacket(remoteIpNo, remotePortNo);
@@ -762,14 +710,11 @@ int readUdp(int packetSize) {
             if (Udp.write((char *)buff, 12) != 12) {
 #endif
 #if DUSB>=1
-                printTime();
-                Serial.println("ESP-sc-gway::readUdp::PKT_PULL_ACK Error UDP write");
+                printTime(); Serial.println("ESP-sc-gway::readUdp::PKT_PULL_ACK Error UDP write");
 #endif
             } else {
-#if DUSB>=1
-                printTime();
-                Serial.print(F("ESP-sc-gway::readUdp::PKT_TX_ACK tmst="));
-                Serial.println(micros());
+#if DUSB>=2
+                printTime(); Serial.print(F("ESP-sc-gway::readUdp::PKT_TX_ACK tmst=")); Serial.println(micros());
 #endif
             }
 
@@ -780,26 +725,28 @@ int readUdp(int packetSize) {
 #endif
             }
             yield();
-#if DUSB>=1
-            printTime();
-            Serial.print(F("ESP-sc-gway::readUdp::PKT_PULL_RESP size ")); Serial.print(packetSize);
-            Serial.print(F(" From ")); Serial.print(remoteIpNo);
-            Serial.print(F(", port ")); Serial.print(remotePortNo);	
-            Serial.print(F(", data: ")); data = buff_down + 4;
+#if DUSB>=2
+            printTime(); Serial.print("ESP-sc-gway::readUdp::PKT_PULL_RESP size = "); Serial.print(packetSize);
+            Serial.print(F("    From = ")); Serial.print(remoteIpNo);
+            Serial.print(F("    port = ")); Serial.print(remotePortNo);	
+            Serial.print(F("    data = "));
+            data = buff_down + 4;
             data[packetSize] = 0;
             Serial.print((char *)data); Serial.println(F("..."));
 #endif		
             break;
-	
+
+        //-----------------------------------------------------------------------
         case PKT_PULL_ACK:	// 0x04 DOWN
         // the server sends a PULL_ACK to confirm PULL_DATA receipt
         // 
+        //-----------------------------------------------------------------------
 #if DUSB>=1
-            printTime();
-            Serial.print(F("ESP-sc-gway::readUdp::PKT_PULL_ACK size ")); Serial.print(packetSize);
-            Serial.print(F(" From ")); Serial.print(remoteIpNo);
-            Serial.print(F(", port ")); Serial.print(remotePortNo);	
-            Serial.print(F(", data: "));
+            printTime(); Serial.print("ESP-sc-gway::readUdp::ident = PKT_PULL_ACK = "); Serial.println(ident);
+            Serial.print("    packet size = "); Serial.print(packetSize);
+            Serial.print(F("    From = ")); Serial.print(remoteIpNo);
+            Serial.print(F("    port = ")); Serial.print(remotePortNo);	
+            Serial.print(F("    data = "));
             for (int i=0; i<packetSize; i++) {
             	Serial.print(buff_down[i],HEX);
             	Serial.print(':');
@@ -807,17 +754,18 @@ int readUdp(int packetSize) {
             Serial.println();
 #endif
             break;
-	
+
+        //-----------------------------------------------------------------------
         default:
         // 
-        //
+        //-----------------------------------------------------------------------
 #if GATEWAYMGT==1
             // For simplicity, we send the first 4 bytes too
             gateway_mgt(packetSize, buff_down);
 #else
 
 #endif
-#if DUSB>=2
+#if DUSB>=1
             printTime();
             Serial.print(F("ESP-sc-gway::readUdp ERROR ident not recognized="));
             Serial.println(ident);
@@ -826,7 +774,7 @@ int readUdp(int packetSize) {
 		}
 #if DUSB>=2
     printTime();
-		Serial.print(F("ESP-sc-gway::readUdp returning=")); 
+		Serial.print(F("ESP-sc-gway::readUdp returning packetSize = ")); 
 		Serial.println(packetSize);
 #endif
 		// For downstream messages
@@ -904,7 +852,7 @@ int sendUdp(IPAddress server, int port, uint8_t *msg, int length) {
 		return(0);
 	}
 	return(1);
-}//sendUDP
+}//sendUdp
 
 // ----------------------------------------------------------------------------
 // UDPconnect(): connect to UDP (which is a local thing, after all UDP 
@@ -1013,10 +961,8 @@ void pullData() {
 
 
 // ----------------------------------------------------------------------------
-// Send UP periodic status message to server even when we do not receive any
-// data. 
-// Parameters:
-//	- <none>
+// Send UP periodic status message to server even when we do not receive any data. 
+// Parameters: <none>
 // ----------------------------------------------------------------------------
 void sendstat() {
 
@@ -1068,24 +1014,30 @@ void sendstat() {
 
     stat_index += j;
     status_report[stat_index] = 0; 							// add string terminator, for safety
-#if DUSB>=1
+#if DUSB>=2
 	Serial.print(F("stat update: <"));
 	Serial.print(stat_index);
 	Serial.print(F("> "));
 	Serial.println((char *)(status_report+12));			// DEBUG: display JSON stat
 #endif
 	if (stat_index > STATUS_SIZE) {
-		Serial.println(F("sendstat:: ERROR buffer too big"));
+		printTime(); Serial.println("ESP-sc-gway::sendstat::ERROR buffer too big");
 		return;
 	}
 	
     //send the update
 #ifdef _TTNSERVER
+#if DUSB>=2
+    printTime(); Serial.println("ESP-sc-gway::sendstat() will call ESP-sc-gway::sendUdp()");
+#endif
     sendUdp(ttnServer, _TTNPORT, status_report, stat_index);
 	yield();
 #endif
 
 #ifdef _THINGSERVER
+#if DUSB>=2
+    printTime(); Serial.println("ESP-sc-gway::sendstat() will call ESP-sc-gway::sendUdp()");
+#endif
 	sendUdp(thingServer, _THINGPORT, status_report, stat_index);
 #endif
 	return;

@@ -543,29 +543,34 @@ bool sendPkt(uint8_t *payLoad, uint8_t payLength) {
 
 void loraWait(uint32_t tmst) {
 #if DUSB>=2
-  printTime(); Serial.print("_loraModem::loraWait:: tmst = "); Serial.println(tmst);
+    printTime(); Serial.print("_loraModem::loraWait:: initial tmst = "); Serial.println(tmst);
 #endif
-	uint32_t startTime = micros();						// Start of the loraWait function
-	tmst += txDelay;
-	uint32_t waitTime = tmst - micros();
+    uint32_t startTime = micros();						// Start of the loraWait function
+    tmst += txDelay;
+    uint32_t waitTime = tmst - micros();
 #if DUSB>=2
-  printTime(); Serial.print("_loraModem::loraWait::startTime = "); Serial.println(startTime);
-  printTime(); Serial.print("_loraModem::loraWait::txDelay = "); Serial.println(txDelay);
-  printTime(); Serial.print("_loraModem::loraWait::tmst = "); Serial.println(tmst);
-  printTime(); Serial.print("_loraModem::loraWait::waitTime = "); Serial.println(waitTime);
-  
+    printTime(); Serial.print("_loraModem::loraWait::startTime = "); Serial.println(startTime);
+    printTime(); Serial.print("_loraModem::loraWait::txDelay = "); Serial.println(txDelay);
+    printTime(); Serial.print("_loraModem::loraWait::tmst = "); Serial.println(tmst);
+    printTime(); Serial.print("_loraModem::loraWait::waitTime = "); Serial.println(waitTime);
 #endif
-	while (waitTime > 16000) {
-    Serial.print("Socorro!!!  waitTime = "); Serial.println(waitTime);
-		delay(15);										// ms delay including yield, slightly shorter
-		waitTime= tmst - micros();
-	}
-	if (waitTime>0) delayMicroseconds(waitTime);
+    printTime(); Serial.print("_loraModem::loraWait:: micros() = "); Serial.println(micros());
+    while (waitTime > 16000) {
 #if DUSB>=2
-	else if ((waitTime+20) < 0) {
-    printTime();
-		Serial.println(F("_loraModem::loraWait::TOO LATE"));
-	}
+        Serial.print("Socorro!!!  waitTime = "); Serial.println(waitTime);
+#endif
+        delay(15);										// ms delay including yield, slightly shorter
+        waitTime= tmst - micros();
+    }
+    
+    if (waitTime>0) {
+        delayMicroseconds(waitTime);
+    } else if ((waitTime+20) < 0) {
+        printTime();
+        Serial.println(F("_loraModem::loraWait::TOO LATE"));
+    }
+
+#if DUSB>=2
     printTime();
 		Serial.print(F("_loraModem::loraWait::start: ")); 
 		Serial.print(startTime);
@@ -578,7 +583,8 @@ void loraWait(uint32_t tmst) {
 		Serial.println();
     Serial.flush();
 #endif
-}
+printTime(); Serial.print("_loraModem::loraWait:: micros() = "); Serial.println(micros());
+} // end of LoraWait
 
 
 // ----------------------------------------------------------------------------
@@ -621,7 +627,7 @@ void txLoraModem(uint8_t *payLoad, uint8_t payLength, uint32_t tmst, uint8_t sfT
 		Serial.println();
     Serial.flush();
 #endif
-	_state = S_TX;
+	_state = S_TX; 
 		
 	// 1. Select LoRa modem from sleep mode
 	//opmode(OPMODE_LORA);									// set register 0x01 to 0x80
@@ -663,6 +669,10 @@ void txLoraModem(uint8_t *payLoad, uint8_t payLength, uint32_t tmst, uint8_t sfT
 	sendPkt(payLoad, payLength);
 
 	// 15. wait extra delay out. The delayMicroseconds timer is accurate until 16383 uSec.
+#if DUSB>=2
+    // Make sure that all serial stuff is done before continuing
+    printTime(); Serial.print("_loraModem::txLoraModem::will call loraWait() with tmst = "); Serial.println(tmst);
+#endif
 	loraWait(tmst);
 	
 	//Set the base addres of the transmit buffer in FIFO

@@ -59,7 +59,7 @@ int sendPacket(uint8_t *buf, uint8_t length)
 	char * bufPtr = (char *) (buf);
 	buf[length] = 0;
 	
-#if DUSB>=1
+#if DUSB>=2
 	//if (debug>=2) { // paulo
     Serial.println("módulo: _txRx");
 		Serial.println((char *)buf);
@@ -70,15 +70,15 @@ int sendPacket(uint8_t *buf, uint8_t length)
 	// Use JSON to decode the string after the first 4 bytes.
 	// The data for the node is in the "data" field. This function destroys original buffer
 	JsonObject& root = jsonBuffer.parseObject(bufPtr);
-		
+#if DUSB>=2
+    //printTime(); Serial.print("_txRx::sendPacket::root = "); Serial.println(*root);
+#endif
 	if (!root.success()) {
 #if DUSB>=1
     Serial.println("módulo: _txRx");
 		Serial.print (F("sendPacket:: ERROR Json Decode"));
-		//if (debug>=2) {  // paulo
 			Serial.print(':');
 			Serial.println(bufPtr);
-		//}
 		Serial.flush();
 #endif
 		return(-1);
