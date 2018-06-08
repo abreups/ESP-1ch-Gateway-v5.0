@@ -284,6 +284,7 @@ void setRate(uint8_t sf, uint8_t crc)
 	uint8_t mc1=0, mc2=0, mc3=0;
 #if DUSB>=2
 	if ((sf<SF7) || (sf>SF12)) {
+      // isso não deveria ser um erro? Ajustar para uma freq padrão...
       printTime();
 			Serial.print(F("_loraModem::setRate:: SF=")); Serial.println(sf);
 		return;
@@ -542,14 +543,20 @@ bool sendPkt(uint8_t *payLoad, uint8_t payLength) {
 
 void loraWait(uint32_t tmst) {
 #if DUSB>=2
-  printTime();
-  Serial.println("_loraModem::loraWait");
+  printTime(); Serial.print("_loraModem::loraWait:: tmst = "); Serial.println(tmst);
 #endif
 	uint32_t startTime = micros();						// Start of the loraWait function
 	tmst += txDelay;
 	uint32_t waitTime = tmst - micros();
-		
+#if DUSB>=2
+  printTime(); Serial.print("_loraModem::loraWait::startTime = "); Serial.println(startTime);
+  printTime(); Serial.print("_loraModem::loraWait::txDelay = "); Serial.println(txDelay);
+  printTime(); Serial.print("_loraModem::loraWait::tmst = "); Serial.println(tmst);
+  printTime(); Serial.print("_loraModem::loraWait::waitTime = "); Serial.println(waitTime);
+  
+#endif
 	while (waitTime > 16000) {
+    Serial.print("Socorro!!!  waitTime = "); Serial.println(waitTime);
 		delay(15);										// ms delay including yield, slightly shorter
 		waitTime= tmst - micros();
 	}
@@ -706,9 +713,17 @@ void rxLoraModem()
     //opmode(OPMODE_SLEEP);										// set 0x01 to 0x00
 	
 	// 3. Set frequency based on value in freq
+#if DUSB>=2
+    printTime();
+    Serial.print("_loraModem::rxLoraModem::calling setFreq with ifreq = "); Serial.println(ifreq);
+#endif
 	setFreq(freqs[ifreq]);
 
 	// 4. Set spreading Factor and CRC
+#if DUSB>=2
+    printTime();
+    Serial.print("_loraModem::rxLoraModem::calling setRate with sf = "); Serial.println(sf);
+#endif
     setRate(sf, 0x04);
 	
 	// prevent node to node communication
@@ -853,7 +868,7 @@ void cadScanner()
 // ----------------------------------------------------------------------------
 void initLoraModem()
 {
-	_state = S_INIT;
+	_state = S_INIT;  // colocar como última instrução?
 	// Reset the transceiver chip with a pulse of 10 mSec
 #ifdef ESP32BUILD
 	digitalWrite(pins.rst, LOW);
@@ -870,16 +885,14 @@ void initLoraModem()
 
   // Check chip version first
     uint8_t version = readRegister(REG_VERSION);        // Read the LoRa chip version id
-    if (version == 0x22) {
-        // sx1272
+    if (version == 0x22) { // sx1272
 #if DUSB>=2
         printTime();
         Serial.println(F("WARNING:: SX1272 detected"));
 #endif
         sx1272 = true;
     } 
-  else if (version == 0x12) {
-        // sx1276?
+  else if (version == 0x12) { // sx1276?
 #if DUSB>=2
         printTime();
         Serial.println(F("_loraModem::initLoraModem::SX1276 starting"));
@@ -915,6 +928,10 @@ void initLoraModem()
 	setFreq(freq);
 	
 	// 4. Set spreading Factor
+#if DUSB>=2
+  printTime();
+  Serial.print(F("_loraModem::initLoraModem::setting sf = ")); Serial.println(sf);
+#endif
     setRate(sf, 0x04);
 	
 	// Low Noise Amplifier used in receiver
@@ -953,7 +970,7 @@ void initLoraModem()
     Serial.println(F("_loraModem::initLoraModem::clear all radio IRQ flags"));
 #endif
     writeRegister(REG_IRQ_FLAGS, 0xFF);
-}// initLoraModem
+} // end of initLoraModem
 
 
 

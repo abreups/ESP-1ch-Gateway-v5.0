@@ -211,7 +211,6 @@ void ICACHE_FLASH_ATTR ReleaseMutex(int *mutex);
 void die(const char *s)
 {
 	Serial.println(s);
-	//if (debug>=2) Serial.flush();
 	Serial.flush();
 
 	delay(50);
@@ -1292,10 +1291,10 @@ void setup() {
 	delay(100);												// Wait after setup
 	
 	// Setup and initialise LoRa state machine of _loramModem.ino
-	_state = S_INIT;
+	_state = S_INIT;  // isso é inútil porque initLoraModem() vai setar o estado em S_INIT logo no começo
 #if DUSB>=2
 	printTime();
-	Serial.println("ESP-sc-gway::initLoraModem");
+	Serial.println("ESP-sc-gway::setup::initLoraModem");
 #endif
 	initLoraModem();
 	

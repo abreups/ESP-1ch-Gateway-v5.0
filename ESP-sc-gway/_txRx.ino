@@ -187,20 +187,16 @@ int sendPacket(uint8_t *buf, uint8_t length)
 		Serial.print(payLength);
 		Serial.print(F(", psize="));
 		Serial.println(psize);
-		//if (debug>=2) Serial.flush(); paulo
-   Serial.flush(); // inseri paulo
+   Serial.flush();
 #endif
 	}
 #if DUSB>=1
-	//else if (debug >= 2) { // paulo
 		for (i=0; i<payLength; i++) {
 			Serial.print(payLoad[i],HEX); 
 			Serial.print(':'); 
 		}
 		Serial.println();
-		//if (debug>=2) Serial.flush(); paulo
-   Serial.flush(); // inseri paulo
-	//}
+   Serial.flush();
 #endif
 	cp_up_pkt_fwd++;
 

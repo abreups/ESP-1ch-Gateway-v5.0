@@ -29,9 +29,11 @@ long txDelay= 0x00;								// delay time on top of server TMST
 // Each "real" gateway should support the first 3 frequencies according to LoRa spec.
 
 int freqs [] = { 
-	433175000                     //868100000, 									// Channel 0, 868.1 MHz primary
-	//868300000, 									// Channel 1, 868.3 MHz mandatory
-	//868500000, 									// Channel 2, 868.5 MHz mandatory
+	433175000,
+  433175000
+	//868100000, 									// Channel 0, 868.1 MHz primary
+	//868300000, 									// Channel 1, 868.3 MHz mandatory  --> precisamos disso?
+	//868500000, 									// Channel 2, 868.5 MHz mandatory  --> precisamos disso?
 	//867100000, 									// Channel 3, 867.1 MHz
 	//867300000, 
 	//867500000, 
@@ -101,8 +103,8 @@ struct pins {
   uint8_t dio0=26;   // GPIO5 / D1. Dio0 used for one frequency and one SF - OK. same as DIO0 below
   uint8_t dio1=33;   // GPIO4 / D2. Used for CAD, may or not be shared with DIO0 - not documented in Heltec's pinout diagram
   uint8_t dio2=32;   // GPIO0 / D3. Used for frequency hopping, don't care - not documented in Heltec's pinout diagram
-  uint8_t ss=18;    // GPIO15 / D8. Select pin connected to GPIO15 - OK. same as DIO0 below
-  uint8_t rst=14;    // GPIO0 / D3. Reset pin not used - OK. same as DIO0 below
+  uint8_t ss=18;    // GPIO15 / D8. Select pin connected to GPIO18 - OK. same as DIO0 below
+  uint8_t rst=14;    // GPIO0 / D3. Reset pin not used (what??) - OK. same as DIO0 below
 // Pin definetion of WIFI LoRa 32
 // HelTec AutoMation 2017 support@heltec.cn 
 // Pinout: http://www.heltec.cn/download/WIFI_LoRa_32_Diagram.pdf
