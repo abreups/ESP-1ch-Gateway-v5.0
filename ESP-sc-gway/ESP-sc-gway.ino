@@ -41,6 +41,7 @@
 #include <cstring>
 #include <SPI.h>
 #include <TimeLib.h>							// http://playground.arduino.cc/code/time
+
 #ifdef ESP32BUILD
 #include "esp_wifi.h"
 #include "WiFi.h"
@@ -49,6 +50,7 @@
 #include <ESP8266WiFi.h>
 #include <DNSServer.h> 							// Local DNSserver
 #endif
+
 #include "FS.h"
 #include <WiFiUdp.h>
 #include <pins_arduino.h>
@@ -393,7 +395,6 @@ void setupTime() {
 
 // ============================================================================
 // UDP AND WLAN FUNCTIONS
-
 
 // ----------------------------------------------------------------------------
 // config.txt is a text file that contains lines(!) with WPA configuration items
@@ -786,7 +787,9 @@ int readUdp(int packetSize) {
 
 
 // ----------------------------------------------------------------------------
-// Send UP an UDP/DGRAM message to the MQTT server
+// Send UP an UDP/DGRAM message to the MQTT server.
+// Create a packet with Udp.beginPacket(), then fill in the data with 
+//   Udp.write() and transmits the data with Udp.endPacket().
 // If we send to more than one host (not sure why) then we need to set sockaddr 
 // before sending.
 // Parameters:
@@ -803,55 +806,65 @@ int sendUdp(IPAddress server, int port, uint8_t *msg, int length) {
 	// Check whether we are conected to Wifi and the internet
 	if (WlanConnect(3) < 0) {
 #if DUSB>=1
-    printTime();
-		Serial.println(F("ESP-sc-gway::sendUdp:: ERROR connecting to WiFi"));
+    printTime(); Serial.println("ESP-sc-gway::sendUdp:: ERROR connecting to WiFi");
 		Serial.flush();
 #endif
 		Udp.flush();
 		yield();
-		return(0);
+		return(0); // error
 	}
-
 	yield();
+//#if DUSB>=1
+//    printTime(); Serial.println(F("ESP-sc-gway::sendUdp::WiFi connected"));
+//#endif	
 
-	//send the update
+    //send the update
+    // Create a packet with Udp.beginPacket(), then fill in the data with 
+    //   Udp.write() and transmits the data with Udp.endPacket().
+	  if (!Udp.beginPacket(server, (int) port)) {
 #if DUSB>=1
-	Serial.println(F("ESP-sc-gway::sendUdp::WiFi connected"));
-#endif	
-	if (!Udp.beginPacket(server, (int) port)) {
-#if DUSB>=1
-    printTime();
-		Serial.println(F("ESP-sc-gway::sendUdp:: Error Udp.beginPacket"));
+        printTime(); Serial.println(F("ESP-sc-gway::sendUdp:: Error Udp.beginPacket"));
 #endif
-		return(0);
-	}
-	
-	yield();
-	
+		    return(0); // return error
+	  } else {
+#if DUSB>=2
+        printTime(); Serial.print("ESP-sc-gway::sendUdp::server = "); Serial.print(server);Serial.print(", port = "); Serial.println(port);
+#endif
+	  }
+	  yield();
 #ifdef ESP32BUILD
-	if (Udp.write(msg, length) != length) {
+	  if (Udp.write(msg, length) != length) {
 #else
-  if (Udp.write((char *)msg, length) != length) {
+    if (Udp.write((char *)msg, length) != length) {
 #endif
 #if DUSB>=1
-    printTime();
-		Serial.println(F("ESP-sc-gway::sendUdp:: Error write"));
+        printTime(); Serial.println(F("ESP-sc-gway::sendUdp:: Error write"));
 #endif
-		Udp.endPacket();						// Close UDP
-		return(0);								// Return error
-	}
-	
-	yield();
-	
-	if (!Udp.endPacket()) {
+		    Udp.endPacket();  // Close UDP
+		    return(0);        // return error
+	  } else {
+#if DUSB>=2
+        printTime(); Serial.print("ESP-sc-gway::sendUdp::message = ");
+        for (int i=0;i<length;i++) {
+            Serial.print(msg[i],HEX); Serial.print(':');
+        }
+        Serial.println();
+#endif
+	  }
+  	yield();
+  	if (!Udp.endPacket()) {
 #if DUSB>=1
-    printTime();
-		Serial.println(F("ESP-sc-gway::sendUdp:: Error Udp.endPacket"));
-		Serial.flush();
+        printTime();
+    		Serial.println(F("ESP-sc-gway::sendUdp:: Error Udp.endPacket"));
+    		Serial.flush();
 #endif
-		return(0);
-	}
-	return(1);
+  		  return(0); // return error
+  	} else {
+#if DUSB>=2
+        printTime(); Serial.println(F("ESP-sc-gway::sendUdp::UDP message sent"));
+#endif
+  	}
+  	return(1); // return success
 }//sendUdp
 
 // ----------------------------------------------------------------------------
@@ -867,8 +880,7 @@ bool UDPconnect() {
 	bool ret = false;
 	unsigned int localPort = _LOCUDPPORT;			// To listen to return messages from WiFi
 #if DUSB>=1
-  printTime();
-	Serial.print(F("ESP-sc-gway::UDPconnect::Local UDP port="));
+  printTime(); Serial.print(F("ESP-sc-gway::UDPconnect::Local UDP port="));
 	Serial.println(localPort);
 #endif	
 	if (Udp.begin(localPort) == 1) {
@@ -901,9 +913,9 @@ void pullData() {
 
     uint8_t pullDataReq[12]; 								// status report as a JSON object
     int pullIndex=0;
-	int i;
+	  int i;
 	
-	uint8_t token_h = (uint8_t)rand(); 						// random token
+	  uint8_t token_h = (uint8_t)rand(); 						// random token
     uint8_t token_l = (uint8_t)rand();						// random token
 	
     // pre-fill the data buffer with fixed fields
@@ -911,7 +923,7 @@ void pullData() {
     pullDataReq[1]  = token_h;
     pullDataReq[2]  = token_l;
     pullDataReq[3]  = PKT_PULL_DATA;						// 0x02
-	// READ MAC ADDRESS OF ESP8266, and return unique Gateway ID consisting of MAC address and 2bytes 0xFF
+	  // READ MAC ADDRESS OF ESP8266, and return unique Gateway ID consisting of MAC address and 2bytes 0xFF
     pullDataReq[4]  = MAC_array[0];
     pullDataReq[5]  = MAC_array[1];
     pullDataReq[6]  = MAC_array[2];
@@ -926,37 +938,40 @@ void pullData() {
 	
     //send the update
 	
-	uint8_t *pullPtr;
-	pullPtr = pullDataReq,
-#ifdef _TTNSERVER
+	  uint8_t *pullPtr;
+	  pullPtr = pullDataReq,
+#ifdef _TTNSERVER // TTN server or your server if you replaced TTN by yours
+#if DUSB>=2
+    printTime(); Serial.println("ESP-sc-gway::pullData::calling sendUDP() to send packet to server");
+#endif
     sendUdp(ttnServer, _TTNPORT, pullDataReq, pullIndex);
 	yield();
 #endif
 
 #if DUSB>=1
-	if (pullPtr != pullDataReq) {
-		printTime();
-		Serial.println(F("ESP-sc-gway::pullData:: pullPtr != pullDatReq"));
-		Serial.flush();
-	}
-
-#endif
-#ifdef _THINGSERVER
-	sendUdp(thingServer, _THINGPORT, pullDataReq, pullIndex);
+	  if (pullPtr != pullDataReq) {
+		    printTime(); Serial.println(F("ESP-sc-gway::pullData:: ERROR: pullPtr != pullDatReq"));
+		    Serial.flush();
+	  }
 #endif
 
-#if DUSB>=1
-	yield();
-	Serial.print(F("PKT_PULL_DATA request, len=<"));
-	Serial.print(pullIndex);
-	Serial.print(F("> "));
-	for (i=0; i<pullIndex; i++) {
-		Serial.print(pullDataReq[i],HEX);				// DEBUG: display JSON stat
-		Serial.print(':');
-	}
-	Serial.println();
+#ifdef _THINGSERVER // additional server (private server)
+#if DUSB>=2
+    printTime(); Serial.println("ESP-sc-gway::pullData::calling sendUDP to send packet to server");
 #endif
-	return;
+	  sendUdp(thingServer, _THINGPORT, pullDataReq, pullIndex);
+#endif
+
+#if DUSB>=2
+	  yield();
+    printTime(); Serial.print("ESP-sc-gway::pullData::PKT_PULL_DATA request, len = "); Serial.print(pullIndex); Serial.print(", data = ");
+	  for (i=0; i<pullIndex; i++) {
+		    Serial.print(pullDataReq[i],HEX);	// DEBUG: display JSON stat
+		    Serial.print(':');
+	   }
+	  Serial.println();
+#endif
+	  return;
 } // end of pullData()
 
 
@@ -1061,17 +1076,21 @@ void setup() {
 	delay(100);
 	Serial.flush();
 	delay(500);
+  Serial.println("NTP time not set yet");
+ 
 #if MUTEX_SPI==1
 	CreateMutux(&inSPI);
 #endif
+
 #if MUTEX_SPO==1
 	CreateMutux(&inSPO);
 #endif
+
 #if MUTEX_INT==1
 	CreateMutux(&inIntr);
 #endif
-	if (SPIFFS.begin()) Serial.println(F("SPIFFS loaded success"));
 
+	if (SPIFFS.begin()) Serial.println(F("SPIFFS loaded success"));
 	Serial.print(F("Assert="));
 #if defined CFG_noassert
 	Serial.println(F("No Asserts"));
@@ -1097,24 +1116,14 @@ void setup() {
 
 	delay(500);
 	yield();
-#if DUSB>=1	
-	//if (debug>=1) {
-		Serial.print(F("debug=")); 
-		Serial.println(debug);
-		yield();
-	//}
-#endif
+
 	WiFi.mode(WIFI_STA);
-	WlanReadWpa();								// Read the last Wifi settings from SPIFFS into memory
+	WlanReadWpa();				// Read the last Wifi settings from SPIFFS into memory
 
 	WiFi.macAddress(MAC_array);
-	
-    sprintf(MAC_char,"%02x:%02x:%02x:%02x:%02x:%02x",
-		MAC_char[0],MAC_array[1],MAC_char[2],MAC_array[3],MAC_char[4],MAC_array[5]);
-	Serial.print("MAC: ");
-    	Serial.print(MAC_char);
-	Serial.print(F(", len="));
-	Serial.println(strlen(MAC_char));
+	sprintf(MAC_char,"%02x:%02x:%02x:%02x:%02x:%02x",MAC_char[0],MAC_array[1],MAC_char[2],MAC_array[3],MAC_char[4],MAC_array[5]);
+	Serial.print("MAC: "); Serial.print(MAC_char);
+	Serial.print(F(", len=")); Serial.println(strlen(MAC_char));
 	
 	// We start by connecting to a WiFi network, set hostname
 	char hostname[12];
@@ -1132,9 +1141,9 @@ void setup() {
 	
 	// Setup WiFi UDP connection. Give it some time and retry 50 times..
 	while (WlanConnect(50) < 0) {
-		Serial.print(F("Error Wifi network connect "));
-		Serial.println();
-		yield();
+		  Serial.print(F("Error Wifi network connect "));
+		  Serial.println();
+		  yield();
 	}
 	
 	Serial.print(F("Host "));
@@ -1143,15 +1152,13 @@ void setup() {
 #else
   Serial.print(wifi_station_get_hostname());
 #endif
-	Serial.print(F(" WiFi Connected to "));
-	Serial.print(WiFi.SSID());
-	Serial.println();
+	Serial.print(F(" WiFi Connected to ")); Serial.println(WiFi.SSID());
 	delay(200);
 	
 	// If we are here we are connected to WLAN
 	// So now test the UDP function
 	if (!UDPconnect()) {
-		Serial.println(F("Error UDPconnect"));
+		  Serial.println(F("Error UDPconnect"));
 	}
 	delay(200);
 	
@@ -1172,23 +1179,17 @@ void setup() {
 	delay(500);
 	
 	// We choose the Gateway ID to be the Ethernet Address of our Gateway card
-    	// display results of getting hardware address
-	// 
-  	Serial.print("Gateway ID: ");
+  // display results of getting hardware address
+  Serial.print("Gateway ID: ");
 	printHexDigit(MAC_array[0]);
-  	printHexDigit(MAC_array[1]);
-  	printHexDigit(MAC_array[2]);
+  printHexDigit(MAC_array[1]);
+  printHexDigit(MAC_array[2]);
 	printHexDigit(0xFF);
 	printHexDigit(0xFF);
-  	printHexDigit(MAC_array[3]);
-  	printHexDigit(MAC_array[4]);
-  	printHexDigit(MAC_array[5]);
-
-  	Serial.print(", Listening at SF");
-	Serial.print(sf);
-	Serial.print(" on ");
-	Serial.print((double)freq/1000000);
-	Serial.println(" Mhz.");
+  printHexDigit(MAC_array[3]);
+  printHexDigit(MAC_array[4]);
+  printHexDigit(MAC_array[5]);
+  Serial.print(", Listening at SF"); Serial.print(sf); Serial.print(" on "); Serial.print((double)freq/1000000); Serial.println(" Mhz.");
 
 	if (!WiFi.hostByName(NTP_TIMESERVER, ntpServer))		// Get IP address of Timeserver
 	{
@@ -1222,21 +1223,21 @@ void setup() {
 #else
 	//setTime((time_t)getNtpTime());
 	while (timeStatus() == timeNotSet) {
-		Serial.println(F("setupTime:: Time not set (yet)"));
-		delay(500);
-		time_t newTime;
-		newTime = (time_t)getNtpTime();
-		if (newTime != 0) setTime(newTime);
+		  Serial.println(F("ESP-sc-gway::setup:: Time not set (yet)"));
+		  delay(500);
+		  // time_t newTime;
+		  time_t newTime = (time_t)getNtpTime();
+		  if (newTime != 0) setTime(newTime);
 	}
-	Serial.print("Time: "); printTime();
-	Serial.println();
+	Serial.print("NTP Time is: "); printTime(); Serial.println();
 
 	writeGwayCfg(CONFIGFILE );
-	Serial.println(F("Gateway configuration saved"));
+	Serial.println(F("Gateway configuration saved to SPIFFS"));
 #endif
 
 #if A_SERVER==1	
 	// Setup the webserver
+  printTime(); Serial.println("ESP-sc-gway::setup::calling setupWWW()");
 	setupWWW();
 #endif
 
@@ -1245,8 +1246,7 @@ void setup() {
 	// Setup and initialise LoRa state machine of _loramModem.ino
 	_state = S_INIT;  // isso é inútil porque initLoraModem() vai setar o estado em S_INIT logo no começo
 #if DUSB>=2
-	printTime();
-	Serial.println("ESP-sc-gway::setup::initLoraModem");
+	printTime(); Serial.println("ESP-sc-gway::setup::calling initLoraModem()");
 #endif
 	initLoraModem();
 	
@@ -1256,6 +1256,9 @@ void setup() {
 	}
 	else { 
 		_state = S_RX;
+#if DUSB>=2
+  printTime(); Serial.println("ESP-sc-gway::setup::calling rxLoraModem()");
+#endif
 		rxLoraModem();
 	}
 	LoraUp.payLength = 0;						// Init the length to 0
@@ -1317,23 +1320,22 @@ void loop () {
     // in userspace in loop().
     if (_event != 0x00) {
 #if DUSB>=2
-        printTime();
-        Serial.print("ESP-sc-gway::loop::_event = 0x"); Serial.println(_event, HEX);
-        Serial.println("ESP-sc-gway::loop::calling stateMachine()");
+        printTime(); Serial.print("ESP-sc-gway::loop::_event = 0x"); Serial.print(_event, HEX); Serial.println(", calling stateMachine()");
 #endif
         stateMachine();     // start the state machine
+#if DUSB>=2
+        printTime(); Serial.print("ESP-sc-gway::loop::returning from call to stateMachine(). Setting _event = 0");
+#endif
         _event = 0;         // reset value
         return;							// Restart loop
     }
 	
-    // After a quiet period, make sure we reinit the modem.
+    // After a quiet period, make sure we reinit the modem. // WHY????
     // XXX Still have to measure quiet period in stat[0];
     // For the moment we use msgTime
-    if ( (((nowTime - statr[0].tmst) / 1000000) > _MSG_INTERVAL ) &&
-        (msgTime < statr[0].tmst)) {
+    if ( (((nowTime - statr[0].tmst) / 1000000) > _MSG_INTERVAL ) && (msgTime < statr[0].tmst) ) {
 #if DUSB>=1
-        printTime();
-        Serial.print("ESP-sc-gway::loop::reinitiating lora modem");
+        printTime(); Serial.println("ESP-sc-gway::loop::reinitiating lora modem after a quiet period");
 #endif
         initLoraModem();
         if (_cad) {
@@ -1341,10 +1343,13 @@ void loop () {
                 cadScanner();
         } else {
                 _state = S_RX;
+#if DUSB>=2
+        printTime(); Serial.println("ESP-sc-gway::loop::calling rxLoraModem in quiet period routine");
+#endif
                 rxLoraModem();
         }
 #if DUSB>=2
-        Serial.print("ESP-sc-gway::loop::reseting interrupts");
+        printTime(); Serial.println("ESP-sc-gway::loop::reseting interrupts in quiet period routine");
 #endif
         writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
         writeRegister(REG_IRQ_FLAGS, 0xFF);				// Reset all interrupt flags
@@ -1357,8 +1362,7 @@ void loop () {
     // not called frequently but it should always run when called.
     yield();
 #if DUSB>=2
-    printTime();
-    Serial.println("ESP-sc-gway::loop::Perform OTA update");
+    printTime(); Serial.println("ESP-sc-gway::loop::Perform OTA update");
 #endif
     ArduinoOTA.handle();
 #endif
@@ -1369,8 +1373,7 @@ void loop () {
     // start of the loop() function
     yield();
 #if DUSB>=5 // Debug disabled because it is called too much, all the time
-    printTime();
-    Serial.println("ESP-sc-gway::loop::handle WiFi");
+    printTime(); Serial.println("ESP-sc-gway::loop::handle WiFi");
 #endif
     server.handleClient();	
 #endif
@@ -1379,8 +1382,7 @@ void loop () {
 	  // We will not read Udp in this loop cycle then
     if (WlanConnect(1) < 0) {
 #if DUSB>=1
-        printTime();
-        Serial.println("ESP-sc-gway::loop::WlanConnect failed");
+        printTime(); Serial.println("ESP-sc-gway::loop::WlanConnect failed");
 #endif
         yield();
         return;										// Exit loop if no WLAN connected
@@ -1394,29 +1396,24 @@ void loop () {
     //
     else { // connection to WiFi OK
 #if DUSB>=5
-        printTime();
-        Serial.println(F("ESP-sc-gway::loop::WlanConnect success"));
+        printTime(); Serial.println(F("ESP-sc-gway::loop::WlanConnect success"));
 #endif
         //Serial.println("ESP-sc-gway::loop::will run while packetSize");
         while( (packetSize = Udp.parsePacket()) > 0) {		// Length of UDP message waiting
 #if DUSB>=2
-            printTime();
-            Serial.println(F("ESP-sc-gway::loop::reading Udp packet"));
+            printTime(); Serial.println(F("ESP-sc-gway::loop::reading Udp packet"));
 #endif
             // Packet may be PKT_PUSH_ACK (0x01), PKT_PULL_ACK (0x03) or PKT_PULL_RESP (0x04)
             // This command is found in byte 4 (buffer[3])
             if (readUdp(packetSize) <= 0) {
 #if DUSB>=1
-                printTime();
-                Serial.println(F("ESP-sc-gway::readUDP::error reading UDP packet"));
+                printTime(); Serial.println(F("ESP-sc-gway::readUDP::error reading UDP packet"));
 #endif
                 break;
             } else { // Now we know we succesfull received message from host
 #if DUSB>=2
-                printTime();
-                Serial.println(F("ESP-sc-gway::loop::success reading UDP packet"));
-                printTime();
-                Serial.println(F("ESP-sc-gway::loop::setting _event=1"));
+                printTime(); Serial.println(F("ESP-sc-gway::loop::success reading UDP packet"));
+                printTime(); Serial.println(F("ESP-sc-gway::loop::setting _event=0"));
 #endif
                 //_event=1;									// Could be done double if more messages received
                 _event=0;
@@ -1426,18 +1423,15 @@ void loop () {
 	
 	yield();
 	
-	
 	// The next section is emergency only. If posible we hop() in the state machine.
 	// If hopping is enabled, and by lack of timer, we hop()
 	// XXX Experimental, 2.5 ms between hops max
 	//
 
 	if ((_hop) && (((long)(nowTime - hopTime)) > 7500)) {
-	
-		if ((_state == S_SCAN) && (sf==SF12)) {
+		  if ((_state == S_SCAN) && (sf==SF12)) {
 #if DUSB>=1
-      			printTime();
-			Serial.println(F("ESP-sc-gway::loop::hop"));
+      		printTime(); Serial.println(F("ESP-sc-gway::loop::calling hop()"));
 #endif
 			hop(); 
 		}
@@ -1446,107 +1440,98 @@ void loop () {
 		// influence on the HOP mode of operation (which is somewhat unexpected)
 		// If we keep staying in another state, reset
 		else if (((long)(nowTime - hopTime)) > 100000) {
-			_state= S_RX;		
-			rxLoraModem();
-			hop();
-			if (_cad) { 
-				_state= S_SCAN; 
-				cadScanner(); 
-			}
+			  _state= S_RX;
+#if DUSB>=2
+        printTime(); Serial.println("ESP-sc-gway::loop::calling rxLoraModem()");
+#endif
+			  rxLoraModem();
+#if DUSB>=2
+        printTime(); Serial.println("ESP-sc-gway::loop::calling hop()");
+#endif
+			  hop();
+			  if (_cad) { 
+				    _state= S_SCAN; 
+#if DUSB>=2
+            printTime(); Serial.println("ESP-sc-gway::loop::calling cadScanner()");
+#endif
+				    cadScanner(); 
+			  }
 		}
 #if DUSB>=2
-		printTime();
-		Serial.print(F("ESP-sc-gway::loop::state="));
-    		Serial.println(_state);
+		printTime(); Serial.print(F("ESP-sc-gway::loop::state=")); Serial.println(_state);
 #endif
 		inHop = false;									// Reset re-entrane protection of HOP
 		yield();
 	}
 	
 
-	// stat PUSH_DATA message (*2, par. 4)
-	//	
-
+	  // stat PUSH_DATA message (*2, par. 4)
+	  //	
     if ((nowSeconds - stattime) >= _STAT_INTERVAL) {	// Wake up every xx seconds
-#if DUSB>=1
-	printTime();
-	Serial.print(F("ESP-sc-gway::loop::STAT <"));
-	Serial.flush();
+#if DUSB>=2
+      	printTime(); Serial.print("ESP-sc-gway::loop::calling sendstat()");
 #endif
         sendstat();										// Show the status message and send to server
-#if DUSB>=1
-	printTime();
-	Serial.println(F("ESP-sc-gway::loop::>"));
-     	Serial.flush();
-#endif	
 
-		// If the gateway behaves like a node, we do from time to time
-		// send a node message to the backend server.
-		// The Gateway node message has nothing to do with the STAT_INTERVAL
-		// message but we schedule it in the same frequency.
-		//
+    		// If the gateway behaves like a node, we do from time to time
+    		// send a node message to the backend server.
+    		// The Gateway node message has nothing to do with the STAT_INTERVAL
+    		// message but we schedule it in the same frequency.
 #if GATEWAYNODE==1
-		if (gwayConfig.isNode) {
-			// Give way to internal Admin if necessary
-			yield();
-			
-			// If the 1ch gateway is a sensor itself, send the sensor values
-			// could be battery but also other status info or sensor info
-		
-			if (sensorPacket() < 0) {
-				printTime();
-				Serial.println(F("ESP-sc-gway::loop::sensorPacket: Error"));
-			}
-		}
+    		if (gwayConfig.isNode) {
+        		yield(); // Give way to internal Admin if necessary
+      			// If the 1ch gateway is a sensor itself, send the sensor values
+      			// could be battery but also other status info or sensor info
+      			if (sensorPacket() < 0) {
+      				  printTime(); Serial.println(F("ESP-sc-gway::loop::sensorPacket: Error"));
+      			}
+    		}
 #endif
-		stattime = nowSeconds;
+		    stattime = nowSeconds;
     }
+	  yield();
 	
-	yield();
-	
-	// send PULL_DATA message (*2, par. 4)
-	//
-	nowSeconds = (uint32_t) millis() /1000;
+  	// send PULL_DATA message (*2, par. 4)
+  	//
+  	nowSeconds = (uint32_t) millis() /1000;
     if ((nowSeconds - pulltime) >= _PULL_INTERVAL) {	// Wake up every xx seconds
-#if DUSB>=1
-		printTime();
-		Serial.print(F("ESP-sc-gway::loop::PULL <"));
-      		Serial.flush();
+#if DUSB>=2
+    		printTime(); Serial.println("ESP-sc-gway::loop::Send PULL_DATA message to server");
+        Serial.flush();
 #endif
-        	pullData();										// Send PULL_DATA message to server
-		initLoraModem();
-		if (_cad) {
-			_state = S_SCAN;
-			cadScanner();
-		}
-		else {
-			_state = S_RX;
-			rxLoraModem();
-		}
-		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
-		writeRegister(REG_IRQ_FLAGS, 0xFF);				// Reset all interrupt flags
+        pullData();										// Send PULL_DATA message to server
+  		  initLoraModem();
+    		if (_cad) {
+    			_state = S_SCAN;
+    			cadScanner();
+    		}
+    		else {
+    			_state = S_RX;
+    			rxLoraModem();
+    		}
+    		writeRegister(REG_IRQ_FLAGS_MASK, (uint8_t) 0x00);
+    		writeRegister(REG_IRQ_FLAGS, 0xFF);				// Reset all interrupt flags
 #if DUSB>=1
-		Serial.println(F("ESP-sc-gway::loop::>"));
-     		Serial.flush();
+  		  printTime(); Serial.println("ESP-sc-gway::loop::end of sending PULL_DATA message to server");
 #endif		
-		pulltime = nowSeconds;
+		    pulltime = nowSeconds;
     }
 
 	
-	// If we do our own NTP handling (advisable)
-	// We do not use the timer interrupt but use the timing
-	// of the loop() itself which is better for SPI
+  	// If we do our own NTP handling (advisable)
+  	// We do not use the timer interrupt but use the timing
+  	// of the loop() itself which is better for SPI
 #if NTP_INTR==0
-	// Set the time in a manual way. Do not use setSyncProvider
-	// as this function may collide with SPI and other interrupts
-	yield();
-	nowSeconds = (uint32_t) millis() /1000;
-	if (nowSeconds - ntptimer >= _NTP_INTERVAL) {
-		yield();
-		time_t newTime;
-		newTime = (time_t)getNtpTime();
-		if (newTime != 0) setTime(newTime);
-		ntptimer = nowSeconds;
-	}
+  	// Set the time in a manual way. Do not use setSyncProvider
+  	// as this function may collide with SPI and other interrupts
+  	yield();
+  	nowSeconds = (uint32_t) millis() /1000;
+  	if (nowSeconds - ntptimer >= _NTP_INTERVAL) {
+    		yield();
+    		time_t newTime;
+    		newTime = (time_t)getNtpTime();
+    		if (newTime != 0) setTime(newTime);
+    		ntptimer = nowSeconds;
+  	}
 #endif
-}
+} // end of loop()
